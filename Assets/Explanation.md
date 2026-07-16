@@ -5,3 +5,5 @@ Theres a cool sky banner at the top of profile, as well as pfps have small bump 
 Typing indicator has 3 keys icons. Each one appears when you have text field focused (it will say [username] is Thinking..). Random one has clicking animation with each symbol written in text field (therefore if you type fast it will show). You can disable that feature in privacy settings but won't see others as well.
 
 It uses https://codeberg.org/MelodyChat/Harmony as backend. (fermi chat Harmony client)
+
+Almost all vital features and roadmap are listed at https://trello.com/b/ZQVstPXp/paradise-roadmap
