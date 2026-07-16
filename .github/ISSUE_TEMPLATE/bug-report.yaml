@@ -1,0 +1,67 @@
+name: "Bug Report"
+description: "Report a bug or crash in Paradise"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Before you submit
+        Please make sure to check if this issue has already been reported.
+
+  - type: checkboxes
+    id: pre-check
+    attributes:
+      label: Pre-report Checklist
+      options:
+        - label: I have searched the existing issues to ensure this is not a duplicate.
+          required: true
+
+  - type: input
+    id: platform-version
+    attributes:
+      label: Platform Version / Commit Hash
+      description: "Enter the version number or git commit hash of Paradise you are using."
+      placeholder: "e.g., v0.1.0 or main-8b3d2f"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Summary
+      description: "What went wrong? Be as descriptive as possible."
+      placeholder: "When I clicked the profile button, the page crashed..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: "How can I trigger this bug?"
+      placeholder: "1. Go to...\n2. Click on...\n3. Observe error..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: "Where did you encounter this issue?"
+      options:
+        - Web Browser (Chrome/Firefox/Safari)
+        - Desktop Client (if applicable)
+        - Self-hosted Instance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console Output
+      description: "Please paste any relevant console logs or terminal output here."
+      placeholder: "Uncaught TypeError: Cannot read properties of undefined..."
+    validations:
+      required: false

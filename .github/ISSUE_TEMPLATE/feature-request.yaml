@@ -1,0 +1,45 @@
+name: "Feature Request"
+description: "Suggest a new idea or feature for Paradise"
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Before you submit
+        Please make sure to check if this feature has already been requested on our Roadmap or Issues.
+
+  - type: checkboxes
+    id: pre-check
+    attributes:
+      label: Pre-request Checklist
+      options:
+        - label: I have searched the existing issues/Trello roadmap to ensure this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: "What are you suggesting?"
+      placeholder: "I would like to see a feature that..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Use Case / Reason
+      description: "Why do you think this would be a good addition to a social platform focused on peace and quiet?"
+      placeholder: "This would help users filter out noise by..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional Details
+      description: "Anything else you want to add? Specific design or implementation ideas?"
+      placeholder: "Following the Paradise Design Rules, we could implement this using..."
+    validations:
+      required: false
