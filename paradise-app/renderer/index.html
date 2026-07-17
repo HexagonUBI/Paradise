@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Paradise</title>
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="window" id="window">
+
+  <!-- ============ BOOT SCREEN (auto-connects to the default instance) ============ -->
+  <div class="overlay" id="boot-screen">
+    <div class="auth-card" style="text-align:center;">
+      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
+      <h1><span class="spinner" style="border-color:rgba(0,175,240,.25);border-top-color:var(--sky);"></span>Connecting to Paradise&hellip;</h1>
+    </div>
+  </div>
+
+  <!-- ============ CONNECT SCREEN (advanced / fallback only) ============ -->
+  <div class="overlay hidden" id="connect-screen">
+    <div class="auth-card">
+      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
+      <h1>Connect to an instance</h1>
+      <div class="auth-error" id="connect-error"></div>
+      <div class="field">
+        <label>Instance address</label>
+        <input type="text" id="connect-input" placeholder="e.g. yourdomain.com or full API URL" autocomplete="off" value="spacebar.chat">
+        <div class="hint">Paradise talks to any Harmony/Spacebar-compatible server &mdash; enter its domain, or a full API base like <code>https://api.example.com/api/v9</code>. The instance must allow CORS from this page's origin, or your browser will block the connection.</div>
+      </div>
+      <button class="primary-btn" id="connect-btn">Connect</button>
+    </div>
+  </div>
+
+  <!-- ============ LOGIN / REGISTER SCREEN ============ -->
+  <div class="overlay hidden" id="login-screen">
+    <div class="auth-card">
+      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
+      <h1>Welcome to Paradise</h1>
+      <div class="auth-tabs">
+        <button class="active" id="tab-login">Log in</button>
+        <button id="tab-register">Register</button>
+      </div>
+      <div class="auth-error" id="login-error"></div>
+
+      <div id="login-fields">
+        <div class="field">
+          <label>Email or username</label>
+          <input type="text" id="login-username" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-password" autocomplete="current-password">
+        </div>
+        <button class="primary-btn" id="login-btn">Log in</button>
+      </div>
+
+      <div id="register-fields" style="display:none;">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="reg-username" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="reg-email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="reg-password" autocomplete="new-password">
+        </div>
+        <button class="primary-btn" id="register-btn">Create account</button>
+      </div>
+
+      <div style="text-align:center;margin-top:16px;font-size:11.5px;color:var(--text-dim);">
+        Connected to <span id="login-instance-label">&mdash;</span> &middot;
+        <span class="ghost-link" id="login-back" style="display:inline;margin:0;width:auto;">use a different instance</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TITLE BAR ============ -->
+  <div class="titlebar" id="titlebar">
+    <button class="nav-btn no-drag" id="back-btn" title="Back" disabled><svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M6.42244 9.63729L5.14715 11L7.13261e-07 5.50001L5.14715 -3.43259e-07L6.42244 1.36271L3.45248 4.53629L13 4.53629L13 6.46374L3.45248 6.46374L6.42244 9.63729Z" fill="white"/>
+</svg></button>
+    <button class="nav-btn no-drag" id="fwd-btn" title="Forward" disabled><svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M6.57756 1.36271L7.85285 9.36443e-08L13 5.49999L7.85285 11L6.57756 9.63729L9.54752 6.46371L5.40947e-08 6.46371L7.70793e-08 4.53626L9.54752 4.53626L6.57756 1.36271Z" fill="white"/>
+</svg></button>
+    <div class="brand no-drag" id="brand-btn" title="Paradise home">
+      <img src="../assets/logo.png" alt="Paradise">
+    </div>
+    <div class="right no-drag">
+      <button class="win-btn" id="min-btn" title="Minimize"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="win-btn" id="max-btn" title="Maximize"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/></svg></button>
+      <button class="win-btn close" id="close-btn" title="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- RAIL -->
+    <div class="rail" id="rail">
+      <button class="rail-btn" data-tip="Home (Direct Messages)" id="logo-rail-btn"><svg width="16" height="23" viewBox="0 0 26 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M-2.43112e-05 33.85V3.65C-2.43112e-05 1.25 1.44998 -4.76837e-07 3.64998 -4.76837e-07C5.84998 -4.76837e-07 7.29998 1.25 7.29998 3.65V13.55H7.39998C8.84998 11.2 11.35 9.85 14.6 9.85C22.3 9.85 25.85 16.4 25.85 23.4C25.85 32.85 20.5 37.3 14.4 37.3C10.85 37.3 7.89998 35.8 6.69998 32.7H6.59998V33.85C6.59998 36.1 5.44998 37.3 3.29998 37.3C1.04998 37.3 -2.43112e-05 36.1 -2.43112e-05 33.85ZM18.55 23.65C18.55 20.25 17.4 15.55 12.75 15.55C8.29998 15.5 6.89998 19.9 6.89998 23.65C6.89998 27.8 8.49998 31.6 12.75 31.6C16.65 31.5 18.55 27.95 18.55 23.65Z" fill="white"/>
+</svg></button>
+      <div class="rail-divider"></div>
+      <div id="guild-list"></div>
+      <div class="spacer"></div>
+      <button class="rail-btn square add" data-tip="Add a server" id="add-server-btn">
+        <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M15 8.75H8.75V15H6.25V8.75H0V6.25H6.25V0H8.75V6.25H15V8.75Z" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="rail-tooltip" id="rail-tooltip"></div>
+
+    <!-- DM / CHANNEL COLUMN -->
+    <div class="dmcol">
+      <div class="me-card" id="me-card">
+        <div class="avatar" id="me-avatar-wrap"><span id="me-avatar-fallback"></span>
+          <div class="status-badge"><div class="dot online"></div></div>
+        </div>
+        <div class="me-info">
+          <div class="name" id="me-name">&nbsp;</div>
+          <div class="status" id="me-status">Connecting&hellip;</div>
+        </div>
+        <button class="round-btn" id="logout-btn" title="Log out" style="margin-left:auto;background:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="#7C8A97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="icon-row">
+        <button class="round-btn" id="mic-btn" title="Mute microphone"><svg width="21" height="22" viewBox="0 0 21 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_5_148" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="21" height="22">
+<path d="M20.9805 0.0195312V21.9805H0.0195312V0.0195312H20.9805Z" fill="white" stroke="white" stroke-width="0.04"/>
+</mask>
+<g mask="url(#mask0_5_148)">
+<mask id="mask1_5_148" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="-7" y="-8" width="36" height="38">
+<path d="M27.9806 -7.31381V29.3131H-6.98035V-7.31381H27.9806Z" fill="white" stroke="white" stroke-width="0.04"/>
+</mask>
+<g mask="url(#mask1_5_148)">
+<mask id="mask2_5_148" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="-13" width="35" height="35">
+<path d="M20.9805 0.0195312V21.9805H0.0195312V0.0195312H20.9805Z" fill="white" stroke="white" stroke-width="0.04"/>
+<path d="M30.5789 -11.709C31.5333 -12.1936 32.7032 -12.449 33.5935 -11.5567C34.4899 -10.6581 34.2235 -9.46263 33.7263 -8.48441C33.4781 -7.99609 33.1733 -7.56393 32.9304 -7.25394C32.8091 -7.09907 32.7031 -6.97428 32.6277 -6.8887C32.5903 -6.84628 32.5604 -6.81337 32.5398 -6.79105C32.5295 -6.77985 32.5208 -6.77136 32.5154 -6.76566C32.5127 -6.76281 32.5109 -6.76025 32.5095 -6.75882L32.5085 -6.75687H32.5076L26.5037 -0.341827V-0.340851L26.4978 -0.334991C26.4935 -0.330411 26.4867 -0.323275 26.4783 -0.314484C26.4614 -0.296909 26.4366 -0.271133 26.4041 -0.239288C26.3388 -0.175393 26.2431 -0.0861858 26.1228 0.0146179C25.8819 0.216474 25.5411 0.464967 25.1423 0.651337C24.7436 0.837659 24.2878 0.962092 23.8152 0.916962C23.343 0.871863 22.8528 0.657066 22.3845 0.164032C21.5283 -0.737627 21.6529 -1.80103 21.9949 -2.64359C22.1658 -3.06479 22.3908 -3.42987 22.573 -3.68948C22.6641 -3.8192 22.7449 -3.92231 22.8025 -3.99319C22.8312 -4.02851 22.854 -4.05584 22.8699 -4.07425C22.8778 -4.08342 22.8833 -4.09106 22.8875 -4.09573L22.8943 -4.10257L28.8962 -10.5166H28.8972L28.8982 -10.5186C28.8996 -10.5199 28.9023 -10.5218 28.905 -10.5244C28.9106 -10.5297 28.9186 -10.5378 28.9294 -10.5479C28.9512 -10.5682 28.9836 -10.5978 29.0251 -10.6348C29.1084 -10.7088 29.229 -10.8128 29.3796 -10.9317C29.6813 -11.1696 30.1025 -11.4671 30.5789 -11.709Z" fill="black" stroke="white" stroke-width="0.04"/>
+<path d="M17.4104 7.53619V10.21H15.4895V7.53619H17.4104Z" fill="white" stroke="white" stroke-width="0.04"/>
+</mask>
+<g mask="url(#mask2_5_148)">
+<path d="M10.5001 2.29666C8.86505 2.29666 7.50012 3.6927 7.50012 5.46365V9.09354C7.50023 10.8644 8.86512 12.2596 10.5001 12.2596C12.1351 12.2596 13.5 10.8644 13.5001 9.09354V5.46365C13.5001 3.6927 12.1352 2.29666 10.5001 2.29666Z" fill="white" stroke="white"/>
+<path d="M16.6251 9.09334C16.6251 12.6372 13.8829 15.51 10.5001 15.51C7.11737 15.51 4.37512 12.6372 4.37512 9.09334" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M10.1251 15.5517V19.1347H10.8751V15.5517H10.1251Z" fill="white" stroke="white"/>
+<path d="M13.1251 18.76H7.87512C7.68993 18.76 7.50012 18.9249 7.50012 19.177C7.50029 19.4288 7.69001 19.593 7.87512 19.593H13.1251C13.3102 19.593 13.5 19.4288 13.5001 19.177C13.5001 18.9249 13.3103 18.76 13.1251 18.76Z" fill="white" stroke="white"/>
+</g>
+</g>
+</g>
+</svg></button>
+        <button class="round-btn" id="deafen-btn" title="Deafen"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.7 8.52997C1.7 4.76143 4.7447 1.70599 8.5 1.70599C12.2553 1.70599 15.3 4.76143 15.3 8.52997C15.3 9.12109 15.2609 9.69004 15.1759 10.236H13.6C12.7976 10.236 12.042 10.6155 11.56 11.2596L9.88295 13.5029C9.4843 14.0369 9.3806 14.7364 9.6084 15.3633C10.1056 16.7358 11.804 17.5513 13.1597 16.5652C16.0132 14.4916 17 11.6588 17 8.52997C17 3.81887 13.1946 0 8.5 0C3.80545 0 0 3.81887 0 8.52997C0 11.6588 0.98685 14.4916 3.8403 16.5652C5.19605 17.5513 6.89435 16.7358 7.3916 15.3633C7.6194 14.7364 7.5157 14.0369 7.11705 13.5029L5.44 11.2596C4.95805 10.6155 4.2024 10.236 3.4 10.236H1.8241C1.7391 9.69004 1.7 9.12109 1.7 8.52997Z" fill="white"/>
+</svg></button>
+        <button class="round-btn" id="settings-btn" title="Settings"><svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_5_207" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="21" height="21">
+<path d="M21 0H0V21H21V0Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_5_207)">
+<mask id="mask1_5_207" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="21" height="21">
+<path d="M0 0H21V21H0V0Z" fill="white"/>
+</mask>
+<g mask="url(#mask1_5_207)">
+<path d="M9.23825 0.95725C8.84187 1.00887 8.62138 1.42188 8.68175 1.81737C8.8375 2.83763 8.51813 3.74412 7.82163 4.03288C7.12512 4.32163 6.258 3.90688 5.64725 3.07563C5.41013 2.75363 4.96125 2.61713 4.6445 2.86038C3.97425 3.37488 3.37488 3.97425 2.86038 4.6445C2.61713 4.96125 2.75363 5.41013 3.07563 5.64725C3.90688 6.258 4.32163 7.12512 4.03288 7.82163C3.74412 8.51813 2.83763 8.8375 1.81737 8.68175C1.42188 8.62138 1.00887 8.84187 0.95725 9.23825C0.903 9.65125 0.875 10.0721 0.875 10.5C0.875 10.9279 0.903 11.3488 0.95725 11.7618C1.00887 12.1581 1.42188 12.3786 1.81737 12.3182C2.83763 12.1625 3.74412 12.4819 4.03288 13.1784C4.32163 13.8749 3.90688 14.7411 3.07563 15.3527C2.75363 15.5899 2.61713 16.0379 2.86038 16.3555C3.37488 17.0257 3.97425 17.6251 4.6445 18.1396C4.96125 18.3829 5.41013 18.2464 5.64725 17.9244C6.258 17.0931 7.12512 16.6784 7.82163 16.9671C8.51813 17.2559 8.8375 18.1624 8.68175 19.1826C8.62138 19.5781 8.84187 19.9911 9.23825 20.0427C9.65125 20.097 10.0721 20.125 10.5 20.125C10.9279 20.125 11.3488 20.097 11.7618 20.0427C12.1581 19.9911 12.3786 19.5781 12.3182 19.1826C12.1625 18.1624 12.4827 17.2559 13.1793 16.9671C13.8758 16.6784 14.742 17.0931 15.3527 17.9244C15.5899 18.2464 16.0379 18.3829 16.3555 18.1396C17.0257 17.6251 17.6251 17.0257 18.1396 16.3555C18.3829 16.0379 18.2464 15.5899 17.9244 15.3527C17.0931 14.742 16.6784 13.8749 16.9671 13.1784C17.2559 12.4819 18.1624 12.1625 19.1826 12.3182C19.5781 12.3786 19.9911 12.1581 20.0427 11.7618C20.097 11.3488 20.125 10.9279 20.125 10.5C20.125 10.0721 20.097 9.65125 20.0427 9.23825C19.9911 8.84187 19.5781 8.62138 19.1826 8.68175C18.1624 8.8375 17.2559 8.51813 16.9671 7.82163C16.6784 7.12512 17.0931 6.258 17.9244 5.64725C18.2464 5.41013 18.3829 4.96125 18.1396 4.6445C17.6251 3.97425 17.0257 3.37488 16.3555 2.86038C16.0379 2.61713 15.5908 2.75363 15.3536 3.07563C14.7429 3.90688 13.8758 4.32163 13.1793 4.03288C12.4827 3.74412 12.1634 2.83763 12.3191 1.81737C12.3795 1.42188 12.1581 1.00887 11.7618 0.95725C11.3488 0.903 10.9279 0.875 10.5 0.875C10.0721 0.875 9.65125 0.903 9.23825 0.95725ZM14 10.5C14 12.4329 12.4329 14 10.5 14C8.56712 14 7 12.4329 7 10.5C7 8.56712 8.56712 7 10.5 7C12.4329 7 14 8.56712 14 10.5Z" fill="white"/>
+</g>
+</g>
+</svg></button>
+      </div>
+
+      <div class="search-box">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M19.707 18.293L14.314 12.9C15.403 11.504 16 9.799 16 8C16 5.863 15.167 3.854 13.656 2.344C12.146 0.832 10.137 0 8 0C5.863 0 3.854 0.832 2.344 2.344C0.833 3.854 0 5.863 0 8C0 10.137 0.833 12.146 2.344 13.656C3.854 15.168 5.863 16 8 16C9.799 16 11.504 15.404 12.9 14.314L18.293 19.706L19.707 18.293ZM8 14C6.397 14 4.891 13.376 3.758 12.243C2.624 11.11 2 9.603 2 8C2 6.398 2.624 4.891 3.758 3.758C4.891 2.624 6.397 2 8 2C9.603 2 11.109 2.624 12.242 3.758C13.376 4.891 14 6.398 14 8C14 9.603 13.376 11.11 12.242 12.243C11.109 13.376 9.603 14 8 14Z" fill="#00AFF0"/>
+</svg>
+        <input type="text" id="dm-search" placeholder="Search">
+      </div>
+
+      <div class="home-row active" id="home-row">
+        <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.66553 16.6546C6.21781 16.6546 6.66553 16.2069 6.66553 15.6546V11.6546C6.66553 11.1023 7.11324 10.6546 7.66553 10.6546H9.66553C10.2178 10.6546 10.6655 11.1023 10.6655 11.6546V15.6546C10.6655 16.2069 11.1132 16.6546 11.6655 16.6546H14.6655C15.2178 16.6546 15.6655 16.2069 15.6655 15.6546V9.48659C15.6655 9.02711 16.038 8.65463 16.4975 8.65463C17.26 8.65463 17.6208 7.71436 17.054 7.20429L9.33449 0.256701C8.95419 -0.0855734 8.37687 -0.0855736 7.99656 0.256701L0.277022 7.20429C-0.289721 7.71436 0.0710962 8.65463 0.833571 8.65463C1.29305 8.65463 1.66553 9.02711 1.66553 9.48659V15.6546C1.66553 16.2069 2.11324 16.6546 2.66553 16.6546H5.66553Z" fill="#00AFF0"/>
+</svg>
+        <span id="home-row-label">Home</span>
+      </div>
+
+      <div class="nav-tabs" id="nav-tabs">
+        <span class="tab active" data-tab="messages">MESSAGES</span>
+        <span class="tab" data-tab="requests">REQUESTS</span>
+        <span class="filter" id="filter-toggle">All <svg width="11" height="7" viewBox="0 0 11 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M9.7075 0L5.5 4.32657L1.2925 0L0 1.33195L5.5 7L11 1.33195L9.7075 0Z" fill="#00AFF0"/>
+</svg>
+          <div class="filter-menu" id="filter-menu">
+            <div class="active" data-filter="all">All</div>
+            <div data-filter="unread">Unread</div>
+            <div data-filter="groups">Groups only</div>
+          </div>
+        </span>
+      </div>
+      <div class="tab-indicator"><svg width="387" height="16" viewBox="0 0 387 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 14.8734H45.4164C50.8802 14.8734 56.1656 12.9282 60.326 9.38633L70.2035 0.977133C70.9508 0.340954 72.0492 0.340956 72.7965 0.977135L82.674 9.38634C86.8344 12.9282 92.1198 14.8734 97.5836 14.8734H387" stroke="#DDECF0"/>
+</svg></div>
+
+      <div class="dm-scroll" id="dm-scroll">
+        <div class="empty-state small">Connect and log in to load your conversations.</div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat" id="chat">
+      <div class="chat-placeholder" id="chat-placeholder">
+        <img src="../assets/b.svg" alt="">
+        <div>Select a conversation to start chatting</div>
+      </div>
+
+      <div id="chat-active" style="display:none;flex-direction:column;flex:1;min-height:0;">
+        <div class="chat-header">
+          <div class="avatar" id="header-avatar-wrap"><span id="header-avatar-fallback"></span>
+            <div class="status-badge" id="header-status-badge"></div>
+          </div>
+          <div>
+            <div class="dm-name" id="header-name">&nbsp;</div>
+            <div class="dm-preview" id="header-sub"></div>
+          </div>
+          <div class="header-actions">
+            <button class="hdr-btn" id="video-call-btn" title="Start video call"><svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M19.526 3.149C19.231 2.966 18.862 2.951 18.553 3.105L16 4.382V2C16 0.897 15.103 0 14 0H2C0.897 0 0 0.897 0 2V12C0 13.104 0.897 14 2 14H14C15.103 14 16 13.104 16 12V9.618L18.553 10.894C18.694 10.965 18.847 11 19 11C19.183 11 19.365 10.949 19.526 10.851C19.82 10.668 20 10.347 20 10V4C20 3.653 19.82 3.332 19.526 3.149Z" fill="white"/>
+</svg></button>
+            <button class="hdr-btn" id="voice-call-btn" title="Start voice call"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 4.86C0 3.57105 0.512034 2.33489 1.42346 1.42346C2.33489 0.512034 3.57105 0 4.86 0C5.184 0 5.49 0.198 5.607 0.495L7.344 4.671C7.42742 4.8735 7.43414 5.09947 7.36289 5.30656C7.29165 5.51366 7.14734 5.68767 6.957 5.796L4.5 7.2C4.76314 8.77546 5.51169 10.2294 6.64114 11.3589C7.77058 12.4883 9.22454 13.2369 10.8 13.5L11.808 11.484C11.9031 11.2929 12.063 11.1419 12.2592 11.0578C12.4554 10.9737 12.675 10.9621 12.879 11.025L17.433 12.429C17.775 12.528 18 12.843 18 13.194C18 15.84 15.84 18 13.194 18H12.861C5.751 18 0 12.24 0 5.139V4.86Z" fill="white"/>
+</svg></button>
+            <button class="hdr-btn ghost" id="more-btn" title="More options"><svg width="5" height="20" viewBox="0 0 5 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M2.5 15C3.88071 15 5 16.1193 5 17.5C5 18.8807 3.88071 20 2.5 20C1.11929 20 0 18.8807 0 17.5C0 16.1193 1.11929 15 2.5 15ZM2.5 7.5C3.88071 7.5 5 8.61929 5 10C5 11.3807 3.88071 12.5 2.5 12.5C1.11929 12.5 0 11.3807 0 10C0 8.61929 1.11929 7.5 2.5 7.5ZM2.5 0C3.88071 0 5 1.11929 5 2.5C5 3.88071 3.88071 5 2.5 5C1.11929 5 0 3.88071 0 2.5C0 1.11929 1.11929 0 2.5 0Z" fill="#00AFF0"/>
+</svg>
+              <div class="context-menu" id="context-menu">
+                <div data-action="profile">View profile</div>
+                <div data-action="mute">Mute conversation</div>
+                <div data-action="refresh">Refresh messages</div>
+                <hr>
+                <div class="danger" data-action="block">Block user</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="pinned hidden" id="pinned-banner">
+          <div class="pin-text" id="pinned-text-wrap"><span><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.9455 9.31077C14.4143 9.77894 15.0497 10.0419 15.7122 10.0419C16.3747 10.0419 17.0101 9.77894 17.4788 9.31077L17.5038 9.28577C17.5802 9.20789 17.6229 9.10317 17.6229 8.99411C17.6229 8.88504 17.5802 8.78033 17.5038 8.70244L8.92051 0.119107C8.84262 0.0427626 8.7379 0 8.62884 0C8.51978 0 8.41506 0.0427626 8.33717 0.119107L8.31217 0.144107C7.844 0.612858 7.58104 1.24827 7.58104 1.91077C7.58104 2.57328 7.844 3.20869 8.31217 3.67744L8.62884 3.99411L6.19551 6.42744L3.15384 6.14411C2.90973 6.12166 2.66367 6.15333 2.4332 6.23688C2.20273 6.32042 1.99353 6.45378 1.82051 6.62744L1.30384 7.15244C1.22573 7.22991 1.16374 7.32208 1.12143 7.42363C1.07912 7.52518 1.05734 7.6341 1.05734 7.74411C1.05734 7.85412 1.07912 7.96304 1.12143 8.06459C1.16374 8.16614 1.22573 8.2583 1.30384 8.33577L9.28717 16.3191C9.36464 16.3972 9.45681 16.4592 9.55836 16.5015C9.65991 16.5438 9.76883 16.5656 9.87884 16.5656C9.98885 16.5656 10.0978 16.5438 10.1993 16.5015C10.3009 16.4592 10.393 16.3972 10.4705 16.3191L10.9955 15.7941C11.1692 15.6211 11.3025 15.4119 11.3861 15.1814C11.4696 14.9509 11.5013 14.7049 11.4788 14.4608L11.1955 11.4274L13.6288 8.99411L13.9455 9.31077ZM5.35384 14.0524C5.39734 14.0962 5.43056 14.1492 5.4511 14.2074C5.47163 14.2656 5.47898 14.3277 5.4726 14.3891C5.46622 14.4505 5.44628 14.5097 5.41421 14.5625C5.38214 14.6152 5.33875 14.6602 5.28717 14.6941L0.995506 17.5524C0.915657 17.6059 0.819769 17.6302 0.72409 17.6211C0.62841 17.612 0.538822 17.57 0.470506 17.5024L0.120506 17.1524C0.0528999 17.0841 0.0109899 16.9945 0.00187751 16.8989C-0.00723486 16.8032 0.0170109 16.7073 0.0705065 16.6274L2.92884 12.3274C2.96277 12.2759 3.00774 12.2325 3.06049 12.2004C3.11325 12.1683 3.17247 12.1484 3.23387 12.142C3.29528 12.1356 3.35733 12.143 3.41555 12.1635C3.47377 12.1841 3.5267 12.2173 3.57051 12.2608L5.35384 14.0441V14.0524Z" fill="#00AFF0"/>
+</svg></span><span id="pinned-text"></span></div>
+          <button id="unpin-btn" title="Unpin message"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.9455 9.31077C14.4143 9.77894 15.0497 10.0419 15.7122 10.0419C16.3747 10.0419 17.0101 9.77894 17.4788 9.31077L17.5038 9.28577C17.5802 9.20789 17.6229 9.10317 17.6229 8.99411C17.6229 8.88504 17.5802 8.78033 17.5038 8.70244L8.92051 0.119107C8.84262 0.0427626 8.7379 0 8.62884 0C8.51978 0 8.41506 0.0427626 8.33717 0.119107L8.31217 0.144107C7.844 0.612858 7.58104 1.24827 7.58104 1.91077C7.58104 2.57328 7.844 3.20869 8.31217 3.67744L8.62884 3.99411L6.19551 6.42744L3.15384 6.14411C2.90973 6.12166 2.66367 6.15333 2.4332 6.23688C2.20273 6.32042 1.99353 6.45378 1.82051 6.62744L1.30384 7.15244C1.22573 7.22991 1.16374 7.32208 1.12143 7.42363C1.07912 7.52518 1.05734 7.6341 1.05734 7.74411C1.05734 7.85412 1.07912 7.96304 1.12143 8.06459C1.16374 8.16614 1.22573 8.2583 1.30384 8.33577L9.28717 16.3191C9.36464 16.3972 9.45681 16.4592 9.55836 16.5015C9.65991 16.5438 9.76883 16.5656 9.87884 16.5656C9.98885 16.5656 10.0978 16.5438 10.1993 16.5015C10.3009 16.4592 10.393 16.3972 10.4705 16.3191L10.9955 15.7941C11.1692 15.6211 11.3025 15.4119 11.3861 15.1814C11.4696 14.9509 11.5013 14.7049 11.4788 14.4608L11.1955 11.4274L13.6288 8.99411L13.9455 9.31077ZM5.35384 14.0524C5.39734 14.0962 5.43056 14.1492 5.4511 14.2074C5.47163 14.2656 5.47898 14.3277 5.4726 14.3891C5.46622 14.4505 5.44628 14.5097 5.41421 14.5625C5.38214 14.6152 5.33875 14.6602 5.28717 14.6941L0.995506 17.5524C0.915657 17.6059 0.819769 17.6302 0.72409 17.6211C0.62841 17.612 0.538822 17.57 0.470506 17.5024L0.120506 17.1524C0.0528999 17.0841 0.0109899 16.9945 0.00187751 16.8989C-0.00723486 16.8032 0.0170109 16.7073 0.0705065 16.6274L2.92884 12.3274C2.96277 12.2759 3.00774 12.2325 3.06049 12.2004C3.11325 12.1683 3.17247 12.1484 3.23387 12.142C3.29528 12.1356 3.35733 12.143 3.41555 12.1635C3.47377 12.1841 3.5267 12.2173 3.57051 12.2608L5.35384 14.0441V14.0524Z" fill="#00AFF0"/>
+</svg></button>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="typing-indicator" id="typing">
+          <span class="icn" id="typing-icn"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M3.14226 0.288355C3.28764 0.102178 3.51087 -0.00305145 3.74332 7.34812e-05C3.78655 -0.000310779 3.83003 0.00299407 3.87329 0.0102029C3.87324 0.0101953 3.87331 0.0102071 3.87329 0.0102029C3.87346 0.0102309 3.87386 0.0103062 3.8743 0.0103787C3.87517 0.0105238 3.87659 0.0107422 3.87852 0.0110598C3.88239 0.0116977 3.88835 0.0126839 3.89632 0.0139822C3.91225 0.0165808 3.93621 0.0204617 3.96744 0.0254299C4.02992 0.0353693 4.12146 0.049676 4.23623 0.0668924C4.46598 0.101355 4.78789 0.147349 5.1555 0.193301C5.75757 0.26856 6.46199 0.341072 7.08065 0.36594C7.08751 0.366215 7.09436 0.366468 7.1012 0.366731C7.23923 0.372059 7.37286 0.374993 7.49998 0.374993L7.56631 0.374751C8.25749 0.369456 9.1242 0.283333 9.84446 0.193301C10.2121 0.147349 10.534 0.101355 10.7637 0.0668924C10.8785 0.049676 10.97 0.0353693 11.0325 0.0254299C11.0637 0.0204617 11.0877 0.0165808 11.1036 0.0139822C11.1116 0.0126838 11.1176 0.0116977 11.1214 0.0110598C11.1234 0.0107421 11.1248 0.0105238 11.1257 0.0103787C11.4002 -0.0353735 11.6785 0.0744674 11.8469 0.295979L13.6033 2.60539L13.6054 2.60816C14.0302 3.17218 14.2871 3.84439 14.3459 4.54771L14.9922 12.2683L14.9951 12.3069C15.0216 12.706 14.9408 13.1049 14.7611 13.4627L14.6133 13.7573C14.2302 14.5201 13.4484 15 12.5954 15H2.40457C1.55158 15 0.769818 14.5202 0.38676 13.7574L0.238818 13.4628C0.0533327 13.0935 -0.0266598 12.6802 0.00782017 12.2683L0.654035 4.54771C0.7129 3.84442 0.969697 3.17219 1.3946 2.60814L3.1343 0.298726L3.14226 0.288355ZM11.5033 8.42527C11.2907 8.48167 11.0386 8.54444 10.7564 8.60714C9.88447 8.80091 8.70058 9.00001 7.49998 9.00001C6.29937 9.00001 5.11548 8.80091 4.24353 8.60714C3.96137 8.54444 3.70924 8.48167 3.49661 8.42527L1.95631 13.3542C2.0836 13.447 2.23971 13.5 2.40457 13.5H12.5954C12.7602 13.5 12.9163 13.447 13.0436 13.3542L11.5033 8.42527ZM2.5927 3.51067C2.34173 3.84382 2.18886 4.23935 2.15055 4.65311L2.14881 4.67282L1.80164 8.82014L2.26254 7.34529L2.70522 3.36128L2.5927 3.51067ZM12.7374 7.34529L13.1983 8.82014L12.8511 4.67282C12.816 4.25251 12.6626 3.85019 12.4083 3.51201L12.2949 3.36295L12.7374 7.34529ZM10.5906 1.60751C10.4221 1.63104 10.233 1.65639 10.0305 1.68171C9.27399 1.77627 8.29854 1.875 7.49998 1.875C7.47503 1.875 7.4499 1.8749 7.42461 1.87472C6.64058 1.86884 5.69831 1.77335 4.96164 1.68177C4.76233 1.657 4.57595 1.63221 4.40913 1.60911L3.81486 6.95767C4.02264 7.01371 4.27827 7.07827 4.56894 7.14286C5.38448 7.32409 6.45059 7.5 7.49998 7.5C8.54937 7.5 9.61548 7.32409 10.431 7.14286C10.7217 7.07827 10.9773 7.01371 11.1851 6.95767L10.5906 1.60751Z" fill="white"/>
+<path d="M10.5906 1.60751C10.4221 1.63104 10.233 1.65639 10.0305 1.68171C9.27399 1.77627 8.29854 1.875 7.49998 1.875C7.47503 1.875 7.4499 1.8749 7.42461 1.87472C6.64058 1.86884 5.69831 1.77335 4.96164 1.68177C4.76233 1.657 4.57595 1.63221 4.40913 1.60911L3.81486 6.95767C4.02264 7.01371 4.27827 7.07827 4.56894 7.14286C5.38448 7.32409 6.45059 7.5 7.49998 7.5C8.54937 7.5 9.61548 7.32409 10.431 7.14286C10.7217 7.07827 10.9773 7.01371 11.1851 6.95767L10.5906 1.60751Z" fill="white"/>
+<path d="M2.5927 3.51067C2.34173 3.84382 2.18886 4.23935 2.15055 4.65311L2.14881 4.67282L1.80164 8.82014L2.26254 7.34529L2.70522 3.36128L2.5927 3.51067Z" fill="white"/>
+<path d="M12.7374 7.34529L13.1983 8.82014L12.8511 4.67282C12.816 4.25251 12.6626 3.85019 12.4083 3.51201L12.2949 3.36295L12.7374 7.34529Z" fill="white"/>
+</svg></span>
+          <span id="typing-text"></span>
+        </div>
+
+        <div class="composer">
+          <button class="square-btn" id="attach-btn" title="Add attachment"><svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.05075 10.9493C8.47216 11.3501 8.47216 12.0079 8.05075 12.4088C7.64989 12.8096 6.99207 12.8096 6.59122 12.4088C5.62852 11.4446 5.0878 10.1379 5.0878 8.77537C5.0878 7.41289 5.62852 6.1061 6.59122 5.14196L10.2298 1.50341C11.1939 0.540715 12.5007 0 13.8632 0C15.2257 0 16.5324 0.540715 17.4966 1.50341C18.4593 2.46755 19 3.77434 19 5.13682C19 6.4993 18.4593 7.80609 17.4966 8.77024L15.9651 10.3017C15.9754 9.45889 15.8418 8.61606 15.554 7.81434L16.0371 7.32098C16.3252 7.03595 16.5539 6.6966 16.7101 6.32257C16.8662 5.94854 16.9466 5.54726 16.9466 5.14196C16.9466 4.73666 16.8662 4.33538 16.7101 3.96135C16.5539 3.58733 16.3252 3.24798 16.0371 2.96294C15.752 2.6748 15.4127 2.44605 15.0386 2.28993C14.6646 2.13382 14.2633 2.05343 13.858 2.05343C13.4527 2.05343 13.0515 2.13382 12.6774 2.28993C12.3034 2.44605 11.9641 2.6748 11.679 2.96294L8.05075 6.59122C7.76261 6.87625 7.53386 7.2156 7.37774 7.58963C7.22162 7.96366 7.14124 8.36493 7.14124 8.77024C7.14124 9.17554 7.22162 9.57681 7.37774 9.95084C7.53386 10.3249 7.76261 10.6642 8.05075 10.9493ZM10.9493 6.59122C11.3501 6.19036 12.0079 6.19036 12.4088 6.59122C13.3715 7.55536 13.9122 8.86215 13.9122 10.2246C13.9122 11.5871 13.3715 12.8939 12.4088 13.858L8.77024 17.4966C7.80609 18.4593 6.4993 19 5.13682 19C3.77434 19 2.46755 18.4593 1.50341 17.4966C0.540715 16.5324 0 15.2257 0 13.8632C0 12.5007 0.540715 11.1939 1.50341 10.2298L3.03489 8.69829C3.02461 9.54111 3.15823 10.3839 3.44603 11.1959L2.96294 11.679C2.6748 11.9641 2.44605 12.3034 2.28993 12.6774C2.13382 13.0515 2.05343 13.4527 2.05343 13.858C2.05343 14.2633 2.13382 14.6646 2.28993 15.0386C2.44605 15.4127 2.6748 15.752 2.96294 16.0371C3.24798 16.3252 3.58733 16.5539 3.96135 16.7101C4.33538 16.8662 4.73666 16.9466 5.14196 16.9466C5.54726 16.9466 5.94854 16.8662 6.32257 16.7101C6.6966 16.5539 7.03595 16.3252 7.32098 16.0371L10.9493 12.4088C11.2374 12.1238 11.4661 11.7844 11.6223 11.4104C11.7784 11.0363 11.8588 10.6351 11.8588 10.2298C11.8588 9.82446 11.7784 9.42319 11.6223 9.04916C11.4661 8.67513 11.2374 8.33578 10.9493 8.05075C10.8494 7.95721 10.7699 7.84418 10.7155 7.71866C10.6611 7.59313 10.633 7.45778 10.633 7.32098C10.633 7.18418 10.6611 7.04883 10.7155 6.92331C10.7699 6.79778 10.8494 6.68476 10.9493 6.59122Z" fill="white"/>
+</svg></button>
+          <input type="file" id="file-input" style="display:none;">
+          <input type="text" id="composer-input" placeholder="Type text here" disabled>
+          <button class="emoji-btn" id="emoji-btn" title="Add emoji"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 0C4.477 0 0 4.477 0 10C0 15.522 4.477 20 10 20C15.523 20 20 15.522 20 10C20 4.477 15.523 0 10 0ZM6 4C7.104 4 8 4.896 8 6C8 7.105 7.104 8 6 8C4.896 8 4 7.105 4 6C4 4.896 4.896 4 6 4ZM16 12C16 14.617 13.14 17 10 17C6.86 17 4 14.617 4 12V11H16V12ZM14 8C12.896 8 12 7.105 12 6C12 4.896 12.896 4 14 4C15.104 4 16 4.896 16 6C16 7.105 15.104 8 14 8Z" fill="#00AFF0"/>
+</svg></button>
+          <div class="emoji-picker" id="emoji-picker"></div>
+          <button class="send-btn" id="send-btn" title="Send message" disabled><svg width="26" height="25" viewBox="0 0 26 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.4724 13.3302L2.85756 14.3483L0.0642826 23.2115C-0.102268 23.7355 0.0611102 24.3083 0.481431 24.6672C0.900164 25.0259 1.495 25.1014 1.99308 24.8607L25.2561 13.6843C25.7114 13.464 26 13.0061 26 12.504C26 12.002 25.7112 11.5441 25.2561 11.3237L2.00892 0.139337C1.51085 -0.10144 0.916041 -0.0259023 0.497268 0.332903C0.0769112 0.691711 -0.0864481 1.26296 0.080119 1.78701L2.87338 10.6501L13.4676 11.6698C13.8958 11.7123 14.2226 12.0696 14.2226 12.496C14.2226 12.9225 13.8959 13.2797 13.4676 13.3222L13.4724 13.3302Z" fill="#9BE0F9"/>
+</svg></button>
+        </div>
+      </div>
+
+      <div class="home-panel" id="home-panel" style="display:none;">
+        <div class="home-panel-header">
+          <div class="home-panel-title">Friends</div>
+          <div class="home-tabs" id="home-tabs">
+            <button class="home-tab active" data-home-tab="online">Online</button>
+            <button class="home-tab" data-home-tab="all">All</button>
+            <button class="home-tab" data-home-tab="pending">Pending</button>
+            <button class="home-tab add-friend-tab" data-home-tab="add">Add Friend</button>
+          </div>
+        </div>
+
+        <div class="home-add-friend" id="home-add-friend" style="display:none;">
+          <div class="home-add-friend-label">Add a friend by username</div>
+          <div class="home-add-friend-row">
+            <input type="text" id="add-friend-input" placeholder="Enter a username, e.g. river or river#0420">
+            <button class="primary-btn" id="add-friend-btn">Send Friend Request</button>
+          </div>
+          <div class="home-add-friend-msg" id="add-friend-msg"></div>
+        </div>
+
+        <div class="home-list" id="home-list">
+          <div class="empty-state small">Log in to see your friends.</div>
+        </div>
+      </div>
+
+      <div class="call-overlay" id="call-overlay">
+        <div class="call-card">
+          <div class="avatar" id="call-avatar"></div>
+          <h3 id="call-title">Calling&hellip;</h3>
+          <p id="call-sub">Voice call</p>
+          <p style="font-size:11.5px;color:var(--text-dim);margin-top:-12px;">Voice/video isn't wired to Harmony's WebRTC signaling in this preview.</p>
+          <button id="end-call-btn">End call</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="profile" id="profile-panel">
+      <div class="profile-body">
+        <div class="avatar" id="profile-avatar-wrap" data-openable="true"><span id="profile-avatar-fallback"></span>
+          <div class="status-badge" id="profile-status-badge"></div>
+        </div>
+        <h2 id="profile-name">&nbsp;</h2>
+        <div class="sub" id="profile-sub"></div>
+
+        <div class="profile-actions">
+          <button class="hdr-btn" id="profile-video-btn" title="Start video call"><svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M19.526 3.149C19.231 2.966 18.862 2.951 18.553 3.105L16 4.382V2C16 0.897 15.103 0 14 0H2C0.897 0 0 0.897 0 2V12C0 13.104 0.897 14 2 14H14C15.103 14 16 13.104 16 12V9.618L18.553 10.894C18.694 10.965 18.847 11 19 11C19.183 11 19.365 10.949 19.526 10.851C19.82 10.668 20 10.347 20 10V4C20 3.653 19.82 3.332 19.526 3.149Z" fill="white"/>
+</svg></button>
+          <button class="hdr-btn" id="profile-call-btn" title="Start voice call"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 4.86C0 3.57105 0.512034 2.33489 1.42346 1.42346C2.33489 0.512034 3.57105 0 4.86 0C5.184 0 5.49 0.198 5.607 0.495L7.344 4.671C7.42742 4.8735 7.43414 5.09947 7.36289 5.30656C7.29165 5.51366 7.14734 5.68767 6.957 5.796L4.5 7.2C4.76314 8.77546 5.51169 10.2294 6.64114 11.3589C7.77058 12.4883 9.22454 13.2369 10.8 13.5L11.808 11.484C11.9031 11.2929 12.063 11.1419 12.2592 11.0578C12.4554 10.9737 12.675 10.9621 12.879 11.025L17.433 12.429C17.775 12.528 18 12.843 18 13.194C18 15.84 15.84 18 13.194 18H12.861C5.751 18 0 12.24 0 5.139V4.86Z" fill="white"/>
+</svg></button>
+        </div>
+
+        <h4>Bio</h4>
+        <p class="bio" id="profile-bio">No bio yet.</p>
+
+        <h4 id="number-header" style="display:none;">Number</h4>
+        <div class="number-row" id="profile-number" style="display:none;"><svg width="14" height="14" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 4.86C0 3.57105 0.512034 2.33489 1.42346 1.42346C2.33489 0.512034 3.57105 0 4.86 0C5.184 0 5.49 0.198 5.607 0.495L7.344 4.671C7.42742 4.8735 7.43414 5.09947 7.36289 5.30656C7.29165 5.51366 7.14734 5.68767 6.957 5.796L4.5 7.2C4.76314 8.77546 5.51169 10.2294 6.64114 11.3589C7.77058 12.4883 9.22454 13.2369 10.8 13.5L11.808 11.484C11.9031 11.2929 12.063 11.1419 12.2592 11.0578C12.4554 10.9737 12.675 10.9621 12.879 11.025L17.433 12.429C17.775 12.528 18 12.843 18 13.194C18 15.84 15.84 18 13.194 18H12.861C5.751 18 0 12.24 0 5.139V4.86Z" fill="#00AFF0"/>
+</svg> <span></span></div>
+
+        <h4>Media</h4>
+        <div class="media-grid" id="media-grid">
+          <img src="../assets/chats/template_attachment.png" alt="shared media">
+          <img src="../assets/chats/template_attachment.png" alt="shared media">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PROFILE OVERVIEW MODAL (opened by clicking a status bump) -->
+  <div class="modal-backdrop" id="profile-overview-modal">
+    <div class="modal-card" style="width:340px;padding:0;overflow:hidden;">
+      <div class="sky-banner"><svg width="491" height="193" viewBox="0 0 491 193" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M269.735 9H76V56.5379C81.3135 57.2154 86.4348 58.5197 91.2898 60.3756C96.8378 44.4292 111.85 33 129.5 33C141.252 33 151.835 38.0675 159.234 46.1618C171.445 28.5257 191.646 17 214.5 17C227.811 17 240.223 20.9103 250.68 27.6606C255.565 20.1168 262.083 13.7296 269.735 9Z" fill="#B2E7FA"/>
+<mask id="mask0_2_30" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="76" y="9" width="207" height="109">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M282.633 118C280.144 117.184 277.727 116.211 275.393 115.093C274.929 116.075 274.442 117.044 273.934 118H282.633ZM76 9H269.735C262.083 13.7296 255.565 20.1168 250.68 27.6606C240.223 20.9103 227.811 17 214.5 17C191.646 17 171.445 28.5257 159.234 46.1618C151.835 38.0675 141.252 33 129.5 33C111.85 33 96.8378 44.4292 91.2898 60.3756C86.4348 58.5197 81.3135 57.2154 76 56.5379V9Z" fill="#B2E7FA"/>
+</mask>
+<g mask="url(#mask0_2_30)">
+<ellipse cx="129.5" cy="74" rx="56.5" ry="57" fill="#8EDCF8"/>
+<ellipse cx="129.5" cy="74" rx="48.5" ry="49" fill="#55CAF5"/>
+</g>
+</svg></div>
+      <div style="padding:0 22px 22px;margin-top:-40px;text-align:center;">
+        <div class="avatar" id="overview-avatar-wrap" style="width:80px;height:80px;margin:0 auto 12px;border:4px solid #fff;font-size:24px;">
+          <span id="overview-avatar-fallback"></span>
+          <div class="status-badge" id="overview-status-badge" style="width:18px;height:18px;bottom:4px;right:4px;"></div>
+        </div>
+        <h2 id="overview-name" style="margin:0 0 2px;font-size:16.5px;">&nbsp;</h2>
+        <div class="sub" id="overview-sub" style="margin-bottom:14px;"></div>
+        <p class="bio" id="overview-bio" style="text-align:left;">&nbsp;</p>
+        <button class="modal-close" id="overview-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-card">
+      <h3>Settings</h3>
+      <div class="setting-row">
+        <div><div class="label">Typing indicators</div><div class="desc">Show "is typing" to others, and see theirs</div></div>
+        <label class="switch"><input type="checkbox" id="typing-toggle" checked><div class="track"><div class="thumb"></div></div></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">Desktop-style notifications</div><div class="desc">Toast when a message arrives elsewhere</div></div>
+        <label class="switch"><input type="checkbox" id="notif-toggle" checked><div class="track"><div class="thumb"></div></div></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">Instance</div><div class="desc" id="settings-instance-label">&mdash;</div></div>
+      </div>
+      <button class="modal-close" id="settings-close">Close</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="harmony-client.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
