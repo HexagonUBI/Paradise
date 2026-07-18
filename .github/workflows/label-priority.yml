@@ -5,13 +5,12 @@ on:
 
 permissions:
   issues: write
-  contents: read # Gives the action permission to read your template file
+  contents: read
 
 jobs:
   apply-labels:
     runs-on: ubuntu-latest
     steps:
-      # FIX: Adds the missing checkout step so the container can see your files
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -19,22 +18,33 @@ jobs:
         id: parse
         uses: edumserrano/github-issue-forms-parser@v1
         with:
-          # Double check if your file ends in .yml or .yaml and fix it here:
           template-filepath: '.github/ISSUE_TEMPLATE/bug-report.yaml' 
           issue-form-body: '${{ github.event.issue.body }}'
 
       - name: Apply Priority Label
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
+        env:
+          # Passing the parsed data safely via an environment variable
+          PARSED_DATA: ${{ steps.parse.outputs.parsed-issue-form }}
         with:
           script: |
-            const configData = JSON.parse('${{ steps.parse.outputs.parsed-issue-form }}');
+            const rawData = process.env.PARSED_DATA;
+            if (!rawData) {
+              console.log("No form data found.");
+              return;
+            }
+            
+            const configData = JSON.parse(rawData);
             const priority = configData.priority; 
             
             if (priority) {
+              console.log(`Applying label: ${priority.toLowerCase()}`);
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 labels: [priority.toLowerCase()]
               });
+            } else {
+              console.log("No priority selection detected in this issue.");
             }
