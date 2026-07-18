@@ -1,46 +1,46 @@
-name: Auto Label Priority
+name: Apply Labels
 
 on:
   issues:
-    types:
-      - opened
+    types: [opened]
 
 permissions:
   issues: write
 
 jobs:
-  apply-priority-label:
+  apply-labels:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse issue form
+        id: parser
+        uses: edumserrano/github-issue-forms-parser@v1
+        with:
+          template-filepath: .github/ISSUE_TEMPLATE/bug-report.yaml
+          issue-form-body: ${{ github.event.issue.body }}
+
       - name: Apply priority label
         uses: actions/github-script@v8
+        env:
+          PARSED_DATA: ${{ steps.parser.outputs.json }}
         with:
           script: |
-            const body = context.payload.issue.body || "";
+            const rawData = process.env.PARSED_DATA;
 
-            console.log("===== ISSUE BODY =====");
-            console.log(body);
-            console.log("======================");
+            console.log(rawData);
 
-            // Match:
-            // ### Priority
-            // critical
-            const match = body.match(/###\s*Priority\s*\r?\n+([^\r\n]+)/i);
-
-            if (!match) {
-              console.log("Priority section not found.");
+            if (!rawData) {
+              core.setFailed("Parser produced no JSON output.");
               return;
             }
 
-            const priority = match[1].trim().toLowerCase();
+            const data = JSON.parse(rawData);
+            const priority = data.priority?.toLowerCase();
 
-            console.log(`Detected priority: ${priority}`);
-
-            const valid = ["critical", "major", "minor"];
-
-            if (!valid.includes(priority)) {
-              console.log("Priority is not one of the expected labels.");
+            if (!priority) {
+              core.setFailed("Priority not found.");
               return;
             }
 
@@ -51,4 +51,4 @@ jobs:
               labels: [priority]
             });
 
-            console.log(`Applied label: ${priority}`);
+            console.log(`Applied ${priority}`);
