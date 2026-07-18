@@ -1,54 +1,31 @@
-name: Apply Labels
+- name: Apply priority label
+  uses: actions/github-script@v8
+  env:
+    PARSED_DATA: ${{ steps.parser.outputs.parsed-issue }}
+  with:
+    script: |
+      const rawData = process.env.PARSED_DATA;
 
-on:
-  issues:
-    types: [opened]
+      console.log(rawData);
 
-permissions:
-  issues: write
+      if (!rawData) {
+        core.setFailed("Parser produced no JSON output.");
+        return;
+      }
 
-jobs:
-  apply-labels:
-    runs-on: ubuntu-latest
+      const data = JSON.parse(rawData);
+      const priority = data.priority?.toLowerCase();
 
-    steps:
-      - uses: actions/checkout@v4
+      if (!priority) {
+        core.setFailed("Priority not found.");
+        return;
+      }
 
-      - name: Parse issue form
-        id: parser
-        uses: edumserrano/github-issue-forms-parser@v1
-        with:
-          template-filepath: .github/ISSUE_TEMPLATE/bug-report.yaml
-          issue-form-body: ${{ github.event.issue.body }}
+      await github.rest.issues.addLabels({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        issue_number: context.issue.number,
+        labels: [priority]
+      });
 
-      - name: Apply priority label
-        uses: actions/github-script@v8
-        env:
-          PARSED_DATA: ${{ steps.parser.outputs.json }}
-        with:
-          script: |
-            const rawData = process.env.PARSED_DATA;
-
-            console.log(rawData);
-
-            if (!rawData) {
-              core.setFailed("Parser produced no JSON output.");
-              return;
-            }
-
-            const data = JSON.parse(rawData);
-            const priority = data.priority?.toLowerCase();
-
-            if (!priority) {
-              core.setFailed("Priority not found.");
-              return;
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: [priority]
-            });
-
-            console.log(`Applied ${priority}`);
+      console.log(`Applied ${priority}`);
