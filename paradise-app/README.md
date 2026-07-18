@@ -2,7 +2,7 @@
 
 A real desktop app (Electron, like Discord's own client) for the Paradise social
 platform, talking to a live [Harmony](https://codeberg.org/MelodyChat/Harmony) /
-Spacebar-protocol backend over REST + WebSocket. No mock data — this logs into a
+Spacebar-protocol backend over REST + WebSocket. No mock data - this logs into a
 real instance and sends/receives real messages.
 
 ## Running it
@@ -16,7 +16,7 @@ npm start
 ```
 
 That opens the actual app window (custom titlebar, real minimize/maximize/close,
-its own taskbar/dock icon) — not a browser tab.
+its own taskbar/dock icon) - not a browser tab.
 
 ## Building an installer
 
@@ -28,26 +28,26 @@ npm run dist:mac      # -> dist/*.dmg
 
 Each must be run on (or cross-built for) its target OS; electron-builder handles
 the packaging. The Windows build uses `assets/icon.ico` (included). The macOS
-build wants a proper `.icns` — `assets/icon.png` is included as a source, but
+build wants a proper `.icns` - `assets/icon.png` is included as a source, but
 you'll want to convert it with `iconutil` on a Mac (or any `png2icns` tool) and
 point `build.mac.icon` at the result for a polished dock icon.
 
 ## How it connects
 
 On launch the app auto-connects to `spacebar.chat` (the public instance of the
-protocol family Harmony implements) so you land straight on Login/Register —
+protocol family Harmony implements) so you land straight on Login/Register -
 see `renderer/app.js` → `DEFAULT_INSTANCE`. Change that constant, or use the
 "use a different instance" link on the login screen, to point at a self-hosted
 Harmony/Spacebar server instead. Whatever instance you use must send CORS
 headers allowing this app's origin, or the browser layer inside Electron will
-block the requests — same rule as any other Discord-API-compatible client.
+block the requests - same rule as any other Discord-API-compatible client.
 
 ## Project layout
 
 ```
 main.js              Electron main process: creates the window, owns real
                       minimize/maximize/close via IPC, loads renderer/index.html
-preload.js            contextBridge — exposes window.paradiseNative to the page
+preload.js            contextBridge - exposes window.paradiseNative to the page
 renderer/
   index.html           app shell markup
   style.css             all styling

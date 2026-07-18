@@ -3,6 +3,8 @@ This is document with rules for what Paradise Interface design should follow. It
 
 Specifics need to also be read through trello roadmap page: https://trello.com/b/ZQVstPXp/paradise-roadmap
 
+Most of interfaces must look as close as possible to reference_ images.
+
 Required fonts:
 - Segoe UI font family
 - Helvetica Rounded (logo font)
