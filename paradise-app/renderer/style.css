@@ -7,14 +7,14 @@
     --border:#E3EEF3;
     --text:#1B2733;
     --text-dim:#7C8A97;
-    --bubble-me:#DCEFFC;
-    --bubble-them:#F1F4F6;
+    --bubble-me:#E5F7FD;
+    --bubble-them:#C7EDFC;
     --danger:#D14747;
     --dnd:#E24343;
     --offline:#9AA7B0;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;width:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+  html,body{margin:0;height:100%;width:100%;background:var(--bg);font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
   button{font-family:inherit;}
   .icn{display:inline-flex;align-items:center;justify-content:center;}
   .icn svg{display:block;}
@@ -65,10 +65,10 @@
   .status-badge img{width:100%;height:100%;}
 
   .me-card{position:relative;background:#F0FAFC;border-bottom:1px solid #E7F1F3;padding:0 16px 12px;overflow:hidden;}
-  .me-card-banner{height:82px;margin:0 -16px 0;overflow:hidden;position:relative;}
+  .me-card-banner{height:36px;margin:0 -16px 0;overflow:hidden;position:relative;}
   .me-card-banner img{position:absolute;top:0;left:0;width:100%;height:auto;display:block;}
-  .me-card-row{position:absolute;left:16px;right:16px;top:6px;display:flex;align-items:center;gap:12px;height:64px;padding-left:76px;cursor:pointer;}
-  .me-card .avatar{position:absolute;left:16px;top:6px;width:64px;height:64px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;z-index:1;}
+  .me-card-row{display:flex;align-items:center;gap:12px;padding-left:83px;min-height:64px;cursor:pointer;}
+  .me-card .avatar{position:absolute;left:23px;top:36px;width:64px;height:64px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;z-index:1;}
   .me-card .status-badge{background:#F0FAFC;}
   .me-info{padding-bottom:4px;min-width:0;}
   .me-info .name{font-weight:700;font-size:16px;line-height:1.25;color:var(--text);}
@@ -228,7 +228,7 @@
   .chat-placeholder img{width:64px;opacity:.5;}
 
   /* ---------- profile panel ---------- */
-  .profile{border-left:1px solid var(--border);overflow-y:auto;background:var(--sidebar);}
+  .profile{border-left:1px solid #E7F1F3;overflow-y:auto;background:#F0FAFC;}
   .sky-banner{width:100%;height:96px;position:relative;background:linear-gradient(180deg,#EAF7FD,#D9F0FB);}
   .sky-banner svg{position:absolute;bottom:0;left:0;width:100%;height:auto;}
   .profile-body{padding:26px 20px;position:relative;}

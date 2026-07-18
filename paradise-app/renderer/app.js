@@ -280,6 +280,7 @@ client.addEventListener('message', (e) => {
   if(list) list.push(msg);
   if(msg.channel_id === state.activeChannelId){
     appendMessageEl(msg);
+    if((msg.attachments || []).some(a => a.content_type && a.content_type.startsWith('image/'))) renderMediaGrid(msg.channel_id);
   } else {
     bumpUnread(msg.channel_id);
     if(state.settings.notif){
@@ -691,6 +692,7 @@ async function selectChannel(channelId, info, pushHistory){
     }
   }
   renderMessages(channelId);
+  renderMediaGrid(channelId);
 
   if(pushHistory !== false){
     state.history = state.history.slice(0, state.historyIndex + 1);
@@ -724,8 +726,30 @@ function renderChatHeaderFor(channelId){
     pBadge.innerHTML = statusDotHtml(meta.avatarUser ? state.presence[meta.avatarUser.id] : null);
   }
   document.getElementById('profile-bio').textContent = (meta.avatarUser && meta.avatarUser.bio) || 'No bio yet.';
+  renderMediaGrid(channelId);
 
   document.getElementById('pinned-banner').classList.add('hidden');
+}
+
+function renderMediaGrid(channelId){
+  const grid = document.getElementById('media-grid');
+  const header = document.getElementById('media-header');
+  const cache = state.messageCache[channelId] || [];
+  const images = [];
+  cache.forEach(m => {
+    (m.attachments || []).forEach(a => {
+      if(a.content_type && a.content_type.startsWith('image/')) images.push(a);
+    });
+  });
+  if(!images.length){
+    grid.style.display = 'none';
+    header.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  header.style.display = '';
+  grid.style.display = '';
+  grid.innerHTML = images.map(a => `<img src="${a.url || a.proxy_url}" alt="${escapeHtml(a.filename || 'shared media')}">`).join('');
 }
 
 function updatePresenceUI(userId, status){
