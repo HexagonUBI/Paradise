@@ -50,9 +50,9 @@ body:
       label: Priority
       description: "How urgent is this bug?"
       options:
-        - Critical
-        - Major
-        - Minor
+        - critical
+        - major
+        - minor
     validations:
       required: true
 
