@@ -48,13 +48,10 @@ body:
     id: priority
     attributes:
       label: Priority
-      description: "How urgent is this bug?"
       options:
         - critical
         - major
         - minor
-    validations:
-      required: true
 
   - type: dropdown
     id: environment
