@@ -45,17 +45,6 @@ body:
       required: true
 
   - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      options:
-        - critical
-        - major
-        - minor
-      validations:
-        required: true
-
-  - type: dropdown
     id: environment
     attributes:
       label: Environment
