@@ -115,19 +115,21 @@
     <!-- DM / CHANNEL COLUMN -->
     <div class="dmcol">
       <div class="me-card" id="me-card">
-        <div class="avatar" id="me-avatar-wrap"><span id="me-avatar-fallback"></span>
-          <div class="status-badge"><div class="dot online"></div></div>
+        <div class="me-card-banner"><img src="../assets/sky_banner.svg" alt=""></div>
+        <div class="me-card-row">
+          <div class="avatar" id="me-avatar-wrap"><span id="me-avatar-fallback"></span>
+            <div class="status-badge"><img src="../assets/user_status/online.svg" alt="online"></div>
+          </div>
+          <div class="me-info">
+            <div class="name" id="me-name">&nbsp;</div>
+            <div class="status" id="me-status">Connecting&hellip;</div>
+          </div>
+          <button class="round-btn ghost" id="logout-btn" title="Log out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="#7C8A97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
-        <div class="me-info">
-          <div class="name" id="me-name">&nbsp;</div>
-          <div class="status" id="me-status">Connecting&hellip;</div>
-        </div>
-        <button class="round-btn" id="logout-btn" title="Log out" style="margin-left:auto;background:none;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="#7C8A97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
 
-      <div class="icon-row">
+        <div class="icon-row">
         <button class="round-btn" id="mic-btn" title="Mute microphone"><svg width="21" height="22" viewBox="0 0 21 22" fill="none" xmlns="http://www.w3.org/2000/svg">
 <mask id="mask0_5_148" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="21" height="22">
 <path d="M20.9805 0.0195312V21.9805H0.0195312V0.0195312H20.9805Z" fill="white" stroke="white" stroke-width="0.04"/>
@@ -167,6 +169,7 @@
 </g>
 </g>
 </svg></button>
+      </div>
       </div>
 
       <div class="search-box">

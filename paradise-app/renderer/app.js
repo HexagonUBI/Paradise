@@ -59,10 +59,9 @@ function fillAvatar(wrapEl, fallbackEl, user, size){
 }
 
 function statusDotHtml(status){
-  const s = status || 'offline';
-  if(s === 'online') return `<img src="../assets/icons/online.png" alt="online">`;
-  if(s === 'idle') return `<img src="../assets/icons/idle.png" alt="idle">`;
-  return `<div class="dot ${s === 'dnd' ? 'dnd' : 'offline'}"></div>`;
+  const s = ['online', 'idle', 'dnd'].includes(status) ? status : 'offline';
+  const file = s === 'dnd' ? 'donotdisturb' : s;
+  return `<img src="../assets/user_status/${file}.svg" alt="${s}">`;
 }
 
 /* ---------------- connect flow ---------------- */
@@ -316,9 +315,17 @@ function renderGuildRail(){
     btn.className = 'rail-btn square';
     btn.dataset.tip = g.name || 'Server';
     btn.dataset.guild = g.id;
-    if(g.icon){
-      const iconUrl = (client.cdnBase || '') + `/icons/${g.id}/${g.icon}.png`;
-      btn.innerHTML = `<img src="${iconUrl}" alt="">`;
+    const iconUrl = g.icon ? client.cdnGuildIconUrl(g.id, g.icon) : null;
+    if(iconUrl){
+      const img = document.createElement('img');
+      img.alt = '';
+      img.addEventListener('error', () => {
+        btn.innerHTML = '';
+        btn.textContent = initials(g.name);
+        btn.style.background = colorFor(g.id);
+      }, { once: true });
+      img.src = iconUrl;
+      btn.appendChild(img);
     } else {
       btn.textContent = initials(g.name);
       btn.style.background = colorFor(g.id);

@@ -11,7 +11,7 @@ function createWindow(){
     height: 900,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: '#D8E7F0',
+    backgroundColor: '#FFFFFF',
     title: 'Paradise',
     icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     frame: false,

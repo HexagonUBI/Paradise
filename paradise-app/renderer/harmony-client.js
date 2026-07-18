@@ -192,12 +192,24 @@ class HarmonyClient extends EventTarget {
   async acceptFriendRequest(userId){ return this._rest('PUT', `/users/@me/relationships/${userId}`, { type: 1 }); }
   async removeRelationship(userId){ return this._rest('DELETE', `/users/@me/relationships/${userId}`); }
 
+  _resolveCdnBase(){
+    return this.cdnBase || (this.apiBase ? this.apiBase.replace(/\/api\/v\d+$/, '').replace(/^https?:\/\/api\./, 'https://cdn.') : null);
+  }
+
   cdnAvatarUrl(userId, avatarHash){
     if(!avatarHash) return null;
-    const base = this.cdnBase || (this.apiBase ? this.apiBase.replace(/\/api\/v\d+$/, '').replace(/^https?:\/\/api\./, 'https://cdn.') : null);
+    const base = this._resolveCdnBase();
     if(!base) return null;
     const ext = avatarHash.startsWith('a_') ? 'gif' : 'png';
     return `${base}/avatars/${userId}/${avatarHash}.${ext}`;
+  }
+
+  cdnGuildIconUrl(guildId, iconHash){
+    if(!iconHash) return null;
+    const base = this._resolveCdnBase();
+    if(!base) return null;
+    const ext = iconHash.startsWith('a_') ? 'gif' : 'png';
+    return `${base}/icons/${guildId}/${iconHash}.${ext}`;
   }
 
   /* ---------------- Gateway ---------------- */
