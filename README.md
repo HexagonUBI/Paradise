@@ -16,5 +16,4 @@ Reference concept of what it looks like
 
 ---
 
-[HTML Concept (very different)](https://github.com/SimpleFoxOfficial/Paradise/blob/main/Assets/conceptDONOTUSE.html)
-
+Uses [Spacebar](https://spacebar.chat/) by default. API can be changed in login page.
