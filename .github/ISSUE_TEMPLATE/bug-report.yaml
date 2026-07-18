@@ -45,6 +45,18 @@ body:
       required: true
 
   - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: "How urgent is this bug?"
+      options:
+        - Critical
+        - Major
+        - Minor
+    validations:
+      required: true
+
+  - type: dropdown
     id: environment
     attributes:
       label: Environment
