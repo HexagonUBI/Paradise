@@ -10,6 +10,8 @@ A Social Platform bringing peace and quiet to communities. All yours.
 </div>
 
 <img src="https://github.com/SimpleFoxOfficial/Paradise/blob/main/Assets/reference.png?raw=true">
+<img src="https://github.com/SimpleFoxOfficial/Paradise/blob/main/Assets/reference_settings.png?raw=true">
+<img src="https://github.com/SimpleFoxOfficial/Paradise/blob/main/Assets/reference-loginpage.png?raw=true">
 
 
 Reference concept of what it looks like
