@@ -1,60 +1,54 @@
 name: Auto Label Priority
+
 on:
   issues:
-    types: [opened]
+    types:
+      - opened
 
 permissions:
   issues: write
 
 jobs:
-  apply-labels:
+  apply-priority-label:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Extract and Apply Priority Label
-        uses: actions/github-script@v7
+      - name: Apply priority label
+        uses: actions/github-script@v8
         with:
           script: |
-            const body = context.payload.issue.body;
-            if (!body) {
-              console.log("Issue body is empty.");
+            const body = context.payload.issue.body || "";
+
+            console.log("===== ISSUE BODY =====");
+            console.log(body);
+            console.log("======================");
+
+            // Match:
+            // ### Priority
+            // critical
+            const match = body.match(/###\s*Priority\s*\r?\n+([^\r\n]+)/i);
+
+            if (!match) {
+              console.log("Priority section not found.");
               return;
             }
 
-            // Split the issue template text into lines
-            const lines = body.split(/\r?\n/).map(line => line.trim());
-            
-            // Find where the Priority section starts
-            const headingIndex = lines.findIndex(line => line === '### Priority');
-            
-            if (headingIndex === -1) {
-              console.log("Could not find '### Priority' heading in the issue body.");
+            const priority = match[1].trim().toLowerCase();
+
+            console.log(`Detected priority: ${priority}`);
+
+            const valid = ["critical", "major", "minor"];
+
+            if (!valid.includes(priority)) {
+              console.log("Priority is not one of the expected labels.");
               return;
             }
 
-            // Look at the lines right below the heading to grab the choice
-            let priority = null;
-            for (let i = headingIndex + 1; i < lines.length; i++) {
-              if (lines[i].startsWith('###')) {
-                // Stop if we accidentally cross into the next section
-                break;
-              }
-              if (lines[i] && lines[i] !== '_No response_') {
-                priority = lines[i].toLowerCase();
-                break;
-              }
-            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [priority]
+            });
 
-            // Ensure it matches one of your target tags
-            const validPriorities = ['critical', 'major', 'minor'];
-            
-            if (priority && validPriorities.includes(priority)) {
-              console.log(`Found priority: "${priority}". Applying native label...`);
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: [priority]
-              });
-            } else {
-              console.log(`Parsed text ("${priority}") does not match a valid priority label.`);
-            }
+            console.log(`Applied label: ${priority}`);
