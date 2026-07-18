@@ -65,16 +65,16 @@
   .status-badge img{width:100%;height:100%;}
 
   .me-card{position:relative;background:#F0FAFC;border-bottom:1px solid #E7F1F3;padding:0 16px 12px;overflow:hidden;}
-  .me-card-banner{height:26px;margin:0 -16px 0;overflow:hidden;position:relative;}
-  .me-card-banner img{position:absolute;top:0;left:-31px;width:100%;height:auto;display:block;}
-  .me-card-row{position:relative;display:flex;align-items:flex-end;gap:12px;margin-top:10px;cursor:pointer;}
-  .me-card .avatar{width:64px;height:64px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;}
+  .me-card-banner{height:82px;margin:0 -16px 0;overflow:hidden;position:relative;}
+  .me-card-banner img{position:absolute;top:0;left:0;width:100%;height:auto;display:block;}
+  .me-card-row{position:absolute;left:16px;right:16px;top:6px;display:flex;align-items:center;gap:12px;height:64px;padding-left:76px;cursor:pointer;}
+  .me-card .avatar{position:absolute;left:16px;top:6px;width:64px;height:64px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;z-index:1;}
   .me-card .status-badge{background:#F0FAFC;}
   .me-info{padding-bottom:4px;min-width:0;}
   .me-info .name{font-weight:700;font-size:16px;line-height:1.25;color:var(--text);}
   .me-info .status{font-size:12.5px;color:var(--text-dim);}
   .balance{margin-left:auto;font-weight:600;font-size:13px;color:var(--sky);white-space:nowrap;}
-  .me-card .round-btn.ghost{margin-left:auto;background:none;align-self:flex-start;margin-top:6px;width:28px;height:28px;flex-shrink:0;}
+  .me-card .round-btn.ghost{margin-left:auto;background:none;width:28px;height:28px;flex-shrink:0;}
   .me-card .round-btn.ghost:hover{background:var(--sky-pale);}
 
   .icon-row{display:flex;gap:8px;justify-content:flex-end;padding:12px 0 0;}
