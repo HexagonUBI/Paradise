@@ -10,73 +10,84 @@
 <div class="window" id="window">
 
   <!-- ============ BOOT SCREEN (auto-connects to the default instance) ============ -->
-  <div class="overlay" id="boot-screen">
-    <div class="auth-card" style="text-align:center;">
-      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
-      <h1><span class="spinner" style="border-color:rgba(0,175,240,.25);border-top-color:var(--sky);"></span>Connecting to Paradise&hellip;</h1>
+  <div class="overlay auth-overlay" id="boot-screen">
+    <div class="auth-content" style="justify-content:center;">
+      <div class="auth-logo-row"><img src="../assets/logo2.png" alt="Paradise"></div>
+      <div class="auth-status-line"><span class="spinner"></span>Connecting to Paradise&hellip;</div>
     </div>
   </div>
 
   <!-- ============ CONNECT SCREEN (advanced / fallback only) ============ -->
-  <div class="overlay hidden" id="connect-screen">
-    <div class="auth-card">
-      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
-      <h1>Connect to an instance</h1>
+  <div class="overlay auth-overlay hidden" id="connect-screen">
+    <div class="auth-content">
+      <div class="auth-logo-row"><img src="../assets/logo2.png" alt="Paradise"></div>
       <div class="auth-error" id="connect-error"></div>
-      <div class="field">
-        <label>Instance address</label>
-        <input type="text" id="connect-input" placeholder="e.g. yourdomain.com or full API URL" autocomplete="off" value="spacebar.chat">
-        <div class="hint">Paradise talks to any Harmony/Spacebar-compatible server &mdash; enter its domain, or a full API base like <code>https://api.example.com/api/v9</code>. The instance must allow CORS from this page's origin, or your browser will block the connection.</div>
+      <div class="auth-field-group">
+        <input type="text" class="auth-input" id="connect-input" placeholder="Instance address" autocomplete="off" value="spacebar.chat">
       </div>
-      <button class="primary-btn" id="connect-btn">Connect</button>
+      <div class="auth-hint">Paradise talks to any Harmony/Spacebar-compatible server &mdash; enter its domain, or a full API base like <code>https://api.example.com/api/v9</code>.</div>
+      <button class="auth-submit-btn" id="connect-btn">Connect</button>
     </div>
   </div>
 
   <!-- ============ LOGIN / REGISTER SCREEN ============ -->
-  <div class="overlay hidden" id="login-screen">
-    <div class="auth-card">
-      <div class="logo-row"><img src="../assets/logo.png" alt="Paradise"></div>
-      <h1>Welcome to Paradise</h1>
-      <div class="auth-tabs">
+  <div class="overlay auth-overlay hidden" id="login-screen">
+    <div class="auth-content">
+      <div class="auth-logo-row"><img src="../assets/logo2.png" alt="Paradise"></div>
+
+      <div class="auth-tabs-plain">
         <button class="active" id="tab-login">Log in</button>
         <button id="tab-register">Register</button>
       </div>
       <div class="auth-error" id="login-error"></div>
 
       <div id="login-fields">
-        <div class="field">
-          <label>Email or username</label>
-          <input type="text" id="login-username" autocomplete="username">
+        <div class="auth-field-group auth-field-with-dropdown">
+          <input type="text" class="auth-input" id="login-username" autocomplete="username" placeholder="Email or username">
+          <button class="auth-input-dropdown" id="login-account-switch" title="Saved accounts">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="login-password" autocomplete="current-password">
+        <div class="auth-field-group">
+          <input type="password" class="auth-input" id="login-password" autocomplete="current-password" placeholder="Password">
         </div>
-        <button class="primary-btn" id="login-btn">Log in</button>
+        <button class="auth-submit-btn" id="login-btn">Sign in</button>
       </div>
 
       <div id="register-fields" style="display:none;">
-        <div class="field">
-          <label>Username</label>
-          <input type="text" id="reg-username" autocomplete="username">
+        <div class="auth-field-group">
+          <input type="text" class="auth-input" id="reg-username" autocomplete="username" placeholder="Username">
         </div>
-        <div class="field">
-          <label>Email</label>
-          <input type="email" id="reg-email" autocomplete="email">
+        <div class="auth-field-group">
+          <input type="email" class="auth-input" id="reg-email" autocomplete="email" placeholder="Email">
         </div>
-        <div class="field">
-          <label>Password</label>
-          <input type="password" id="reg-password" autocomplete="new-password">
+        <div class="auth-field-group">
+          <input type="password" class="auth-input" id="reg-password" autocomplete="new-password" placeholder="Password">
         </div>
-        <button class="primary-btn" id="register-btn">Create account</button>
+        <button class="auth-submit-btn" id="register-btn">Create account</button>
       </div>
 
-      <div style="text-align:center;margin-top:16px;font-size:11.5px;color:var(--text-dim);">
-        Connected to <span id="login-instance-label">&mdash;</span> &middot;
-        <span class="ghost-link" id="login-back" style="display:inline;margin:0;width:auto;">use a different instance</span>
+      <button class="auth-ghost-link" id="login-back">Problems signing in?</button>
+
+      <div class="auth-social-row">
+        <button class="auth-social" id="auth-social-trello" title="Paradise Roadmap"></button>
+        <button class="auth-social" id="auth-social-discord" title="Discord"></button>
+        <button class="auth-social" id="auth-social-github" title="GitHub"></button>
       </div>
     </div>
+
+    <div class="auth-bottom-row">
+      <button class="auth-bottom-link" id="login-back-2" title="Connected to spacebar.chat &mdash; use a different instance">
+        <svg width="11" height="9" viewBox="0 0 13 11" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.42244 9.63729L5.14715 11L7.13261e-07 5.50001L5.14715 -3.43259e-07L6.42244 1.36271L3.45248 4.53629L13 4.53629L13 6.46374L3.45248 6.46374L6.42244 9.63729Z" fill="#fff"/></svg>
+        Sign in with a different account
+      </button>
+      <label class="auth-remember">
+        <input type="checkbox" id="remember-me-toggle" checked>
+        <span>Sign me in when Paradise starts</span>
+      </label>
+    </div>
   </div>
+
 
   <!-- ============ TITLE BAR ============ -->
   <div class="titlebar" id="titlebar">
@@ -199,9 +210,7 @@
           </div>
         </span>
       </div>
-      <div class="tab-indicator"><svg width="387" height="16" viewBox="0 0 387 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M0 14.8734H45.4164C50.8802 14.8734 56.1656 12.9282 60.326 9.38633L70.2035 0.977133C70.9508 0.340954 72.0492 0.340956 72.7965 0.977135L82.674 9.38634C86.8344 12.9282 92.1198 14.8734 97.5836 14.8734H387" stroke="#DDECF0"/>
-</svg></div>
+      <div class="tab-indicator"><img id="tab-indicator-img" src="../assets/tab_indicator_messages.svg" alt=""></div>
 
       <div class="dm-scroll" id="dm-scroll">
         <div class="empty-state small">Connect and log in to load your conversations.</div>
@@ -400,9 +409,9 @@
           <button class="settings-nav-item active" data-panel="help">Help &amp; Feedback</button>
         </nav>
         <div class="settings-sidebar-footer">
-          <button class="settings-social" id="settings-social-trello" title="Paradise Roadmap (Trello)"><img src="../assets/socials/trello_icon.svg" alt="Trello"></button>
-          <button class="settings-social discord" id="settings-social-discord" title="Discord"><img src="../assets/socials/clyde_icon.svg" alt="Discord"></button>
-          <button class="settings-social github" id="settings-social-github" title="GitHub"><img src="../assets/socials/github_icon.svg" alt="GitHub"></button>
+          <button class="settings-social" id="settings-social-trello" title="Paradise Roadmap (Trello)"></button>
+          <button class="settings-social" id="settings-social-discord" title="Discord"></button>
+          <button class="settings-social" id="settings-social-github" title="GitHub"></button>
         </div>
       </div>
 
@@ -467,11 +476,11 @@
 
         <div class="settings-panel active" data-panel="help">
           <div class="settings-help-top">
-            <img class="settings-help-logo" src="../assets/icon_256.png" alt="Paradise">
+            <img class="settings-help-logo" src="../assets/icon_logo.png" alt="Paradise">
             <div class="settings-help-version">Paradise version <span id="settings-version-id">0.1.0</span></div>
             <div class="settings-help-copyright">&copy; 2026 Paradise &amp; Hexagon</div>
             <div class="settings-update-row hidden" id="settings-update-row">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#3FC97C"/><path d="M4.5 8.2l2.2 2.2 4.8-4.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="settings-update-check"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5l2.2 2.2L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
               <span>A new update is available.</span>
               <button class="settings-update-btn" id="settings-update-btn" title="Download update">
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>

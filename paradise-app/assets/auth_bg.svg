@@ -1,0 +1,12 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMid slice">
+  <rect width="1920" height="1080" fill="#00AFF0"/>
+  <!-- big right-side curve, built from measured concentric circles centered off-screen at (3700,540) -->
+  <circle cx="3700" cy="540" r="2590" fill="#55CAF5"/>
+  <circle cx="3700" cy="540" r="2545" fill="#8EDCF8"/>
+  <circle cx="3700" cy="540" r="2500" fill="#B2E7FA"/>
+  <circle cx="3700" cy="540" r="2455" fill="#FFFFFF"/>
+  <!-- small decorative arcs in the top-left corner -->
+  <circle cx="0" cy="-20" r="260" fill="#B2E7FA"/>
+  <circle cx="0" cy="-20" r="205" fill="#8EDCF8"/>
+  <circle cx="0" cy="-20" r="150" fill="#55CAF5"/>
+</svg>

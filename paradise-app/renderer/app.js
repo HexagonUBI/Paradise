@@ -86,7 +86,7 @@ async function doConnect(val, silent){
   if(!silent){ connectBtn.disabled = true; connectBtn.innerHTML = '<span class="spinner"></span>Connecting\u2026'; }
   try {
     await client.discover(val);
-    document.getElementById('login-instance-label').textContent = val;
+    document.getElementById('login-back-2').title = `Connected to ${val} \u2014 use a different instance`;
     document.getElementById('settings-instance-label').textContent = client.apiBase;
     bootScreen.classList.add('hidden');
     connectScreen.classList.add('hidden');
@@ -107,9 +107,19 @@ document.getElementById('login-back').addEventListener('click', () => {
   loginScreen.classList.add('hidden');
   connectScreen.classList.remove('hidden');
 });
+document.getElementById('login-back-2').addEventListener('click', () => {
+  loginScreen.classList.add('hidden');
+  connectScreen.classList.remove('hidden');
+});
+
+document.getElementById('auth-social-trello').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
+document.getElementById('auth-social-github').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise'));
+document.getElementById('auth-social-discord').addEventListener('click', () => showToast('Not set up yet \u2014 check back soon'));
 
 async function saveSession(){
   if(!window.paradiseNative) return;
+  const remember = document.getElementById('remember-me-toggle');
+  if(remember && !remember.checked) return;
   await window.paradiseNative.saveAuth({
     apiBase: client.apiBase,
     gatewayUrl: client.gatewayUrl,
@@ -165,6 +175,22 @@ tabRegister.addEventListener('click', () => {
   loginError.classList.remove('show');
 });
 
+function wireReadyState(fieldIds, btnId){
+  const btn = document.getElementById(btnId);
+  const check = () => {
+    const ready = fieldIds.every(id => document.getElementById(id).value.trim().length > 0);
+    btn.classList.toggle('ready', ready);
+  };
+  fieldIds.forEach(id => document.getElementById(id).addEventListener('input', check));
+  check();
+}
+wireReadyState(['login-username', 'login-password'], 'login-btn');
+wireReadyState(['reg-username', 'reg-email', 'reg-password'], 'register-btn');
+
+document.getElementById('login-account-switch').addEventListener('click', () => {
+  document.getElementById('login-username').focus();
+});
+
 document.getElementById('login-btn').addEventListener('click', async () => {
   const login = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
@@ -208,12 +234,19 @@ document.getElementById('register-btn').addEventListener('click', async () => {
 client.addEventListener('gateway-status', (e) => {
   const { status } = e.detail;
   const meStatus = document.getElementById('me-status');
-  if(!meStatus) return;
-  if(status === 'ready') meStatus.textContent = 'Online';
-  else if(status === 'connecting' || status === 'identifying') meStatus.textContent = 'Connecting\u2026';
-  else if(status === 'reconnecting') meStatus.textContent = 'Reconnecting\u2026';
-  else if(status === 'error' || status === 'invalid-session') meStatus.textContent = 'Connection error';
-  else if(status === 'closed') meStatus.textContent = 'Disconnected';
+  if(meStatus){
+    if(status === 'ready') meStatus.textContent = 'Online';
+    else if(status === 'connecting' || status === 'identifying') meStatus.textContent = 'Connecting\u2026';
+    else if(status === 'reconnecting') meStatus.textContent = 'Reconnecting\u2026';
+    else if(status === 'error' || status === 'invalid-session') meStatus.textContent = 'Connection error';
+    else if(status === 'closed') meStatus.textContent = 'Disconnected';
+  }
+  if(window.paradiseNative && window.paradiseNative.setTrayStatus){
+    if(status === 'ready') window.paradiseNative.setTrayStatus('connected');
+    else if(status === 'connecting' || status === 'identifying') window.paradiseNative.setTrayStatus('connecting');
+    else if(status === 'reconnecting' || status === 'closed') window.paradiseNative.setTrayStatus('unstable');
+    else if(status === 'error' || status === 'invalid-session') window.paradiseNative.setTrayStatus('disconnected');
+  }
 });
 
 /* ---------------- boot after auth ---------------- */
@@ -1186,6 +1219,7 @@ document.querySelectorAll('.nav-tabs .tab').forEach(tab => {
   tab.addEventListener('click', function(){
     document.querySelectorAll('.nav-tabs .tab').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
+    document.getElementById('tab-indicator-img').src = `../assets/tab_indicator_${this.dataset.tab === 'requests' ? 'requests' : 'messages'}.svg`;
     if(this.dataset.tab === 'requests'){
       document.getElementById('dm-scroll').innerHTML = '<div class="empty-state small">No pending message requests.</div>';
     } else {

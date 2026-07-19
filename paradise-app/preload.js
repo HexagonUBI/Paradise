@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('paradiseNative', {
   minimize: () => ipcRenderer.send('window-minimize'),
   toggleMaximize: () => ipcRenderer.send('window-maximize-toggle'),
   openExternal: (url) => ipcRenderer.send('open-external', url),
+  setTrayStatus: (status) => ipcRenderer.send('tray-status', status),
   close: () => ipcRenderer.send('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   onWindowStateChange: (callback) => {
