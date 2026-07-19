@@ -1106,8 +1106,41 @@ document.getElementById('mic-btn').addEventListener('click', function(){ this.cl
 document.getElementById('deafen-btn').addEventListener('click', function(){ this.classList.toggle('toggled-off'); showToast(this.classList.contains('toggled-off') ? 'Deafened' : 'Undeafened'); });
 
 const settingsModal = document.getElementById('settings-modal');
-document.getElementById('settings-btn').addEventListener('click', () => settingsModal.classList.add('show'));
+document.getElementById('settings-btn').addEventListener('click', () => {
+  settingsModal.classList.add('show');
+  if(client.user){
+    document.getElementById('settings-account-username').textContent = client.user.username || '\u2014';
+    document.getElementById('settings-account-bio').textContent = client.user.bio || 'No bio yet.';
+  }
+});
 document.getElementById('settings-close').addEventListener('click', () => settingsModal.classList.remove('show'));
+document.getElementById('settings-logout-btn').addEventListener('click', performLogout);
+
+document.querySelectorAll('#settings-nav .settings-nav-item').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#settings-nav .settings-nav-item').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`.settings-panel[data-panel="${tab.dataset.panel}"]`).classList.add('active');
+  });
+});
+
+function openExternalLink(url){
+  if(window.paradiseNative && window.paradiseNative.openExternal) window.paradiseNative.openExternal(url);
+  else showToast('Open ' + url + ' in your browser');
+}
+const notConfiguredYet = () => showToast('Not set up yet \u2014 check back soon');
+
+document.getElementById('settings-social-trello').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
+document.getElementById('settings-social-github').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise'));
+document.getElementById('settings-social-discord').addEventListener('click', notConfiguredYet);
+document.getElementById('settings-link-roadmap').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
+document.getElementById('settings-link-report').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
+document.getElementById('settings-link-suggest').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
+document.getElementById('settings-link-feedback').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
+document.getElementById('settings-link-help').addEventListener('click', notConfiguredYet);
+document.getElementById('settings-link-status').addEventListener('click', notConfiguredYet);
+document.getElementById('settings-update-btn').addEventListener('click', notConfiguredYet);
 
 /* ---------------- profile overview modal ---------------- */
 const overviewModal = document.getElementById('profile-overview-modal');
@@ -1187,11 +1220,13 @@ document.getElementById('min-btn').addEventListener('click', () => window.paradi
 document.getElementById('max-btn').addEventListener('click', () => window.paradiseNative.toggleMaximize());
 document.getElementById('close-btn').addEventListener('click', () => window.paradiseNative.close());
 
-document.getElementById('logout-btn').addEventListener('click', async () => {
+async function performLogout(){
   client.disconnectGateway();
   if(window.paradiseNative) await window.paradiseNative.clearAuth().catch(() => {});
   location.reload();
-});
+}
+
+document.getElementById('logout-btn').addEventListener('click', performLogout);
 
 if(window.paradiseNative){
   const maxIcon = document.getElementById('max-btn');

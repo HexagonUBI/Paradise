@@ -51,6 +51,10 @@ ipcMain.on('window-maximize-toggle', () => {
 ipcMain.on('window-close', () => mainWindow && mainWindow.close());
 ipcMain.handle('window-is-maximized', () => (mainWindow ? mainWindow.isMaximized() : false));
 
+ipcMain.on('open-external', (_event, url) => {
+  if(typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
+});
+
 // Session persistence — encrypted at rest with the OS keychain via safeStorage,
 // so logging back in doesn't require re-entering credentials every launch.
 ipcMain.handle('auth-save', (_event, data) => {
