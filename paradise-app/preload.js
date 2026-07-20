@@ -13,5 +13,11 @@ contextBridge.exposeInMainWorld('paradiseNative', {
   saveAuth: (data) => ipcRenderer.invoke('auth-save', data),
   loadAuth: () => ipcRenderer.invoke('auth-load'),
   clearAuth: () => ipcRenderer.invoke('auth-clear'),
+  onConfirmClose: (callback) => {
+    ipcRenderer.on('confirm-close', () => callback());
+  },
+  respondClose: (choice, remember) => ipcRenderer.send('close-response', { choice, remember }),
+  getCloseBehavior: () => ipcRenderer.invoke('close-behavior-get'),
+  setCloseBehavior: (value) => ipcRenderer.invoke('close-behavior-set', value),
   platform: process.platform,
 });

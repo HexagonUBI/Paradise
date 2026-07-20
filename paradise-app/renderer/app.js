@@ -12,6 +12,8 @@ const state = {
   activeChannelId: null,
   channelMeta: {},           // channelId -> { name, sub, avatarUser, isGroup, pinned }
   messageCache: {},          // channelId -> [messages]
+  messageHasMore: {},        // channelId -> boolean, whether older messages remain on the server
+  messageLoadingMore: {},    // channelId -> boolean, guards against overlapping pagination fetches
   presence: {},              // userId -> status string
   relationships: [],         // friends / pending requests, from fetchRelationships()
   homeTab: 'online',         // 'online' | 'all' | 'pending' — which list the home page shows
@@ -723,9 +725,11 @@ async function selectChannel(channelId, info, pushHistory){
     try {
       const msgs = await client.fetchMessages(channelId, 50);
       state.messageCache[channelId] = (msgs || []).slice().reverse();
+      state.messageHasMore[channelId] = (msgs || []).length >= 50;
     } catch(err){
       document.getElementById('messages').innerHTML = `<div class="empty-state small">Couldn't load messages: ${escapeHtml(err.message)}</div>`;
       state.messageCache[channelId] = [];
+      state.messageHasMore[channelId] = false;
     }
   }
   renderMessages(channelId);
@@ -805,7 +809,46 @@ function updatePresenceUI(userId, status){
   }
 }
 
-function renderMessages(channelId){
+async function loadOlderMessages(channelId){
+  if(!channelId) return;
+  if(state.messageLoadingMore[channelId]) return;
+  if(state.messageHasMore[channelId] === false) return;
+  const cache = state.messageCache[channelId] || [];
+  const oldest = cache[0];
+  if(!oldest) return;
+
+  state.messageLoadingMore[channelId] = true;
+  const el = document.getElementById('messages');
+  const spinner = document.createElement('div');
+  spinner.className = 'empty-state small history-loading';
+  spinner.textContent = 'Loading earlier messages\u2026';
+  if(channelId === state.activeChannelId) el.prepend(spinner);
+
+  try {
+    const older = await client.fetchMessages(channelId, 50, oldest.id);
+    const batch = (older || []).slice().reverse();
+    state.messageHasMore[channelId] = batch.length >= 50;
+    if(batch.length){
+      state.messageCache[channelId] = batch.concat(state.messageCache[channelId] || []);
+      if(channelId === state.activeChannelId){
+        const prevHeight = el.scrollHeight;
+        const prevTop = el.scrollTop;
+        spinner.remove();
+        renderMessages(channelId, { preserveScroll: true });
+        el.scrollTop = el.scrollHeight - prevHeight + prevTop;
+      }
+    } else {
+      spinner.remove();
+    }
+  } catch(err){
+    spinner.remove();
+    // Non-fatal: leave hasMore as-is so the user can retry by scrolling again.
+  } finally {
+    state.messageLoadingMore[channelId] = false;
+  }
+}
+
+function renderMessages(channelId, opts){
   const el = document.getElementById('messages');
   el.innerHTML = '';
   const msgs = state.messageCache[channelId] || [];
@@ -814,7 +857,7 @@ function renderMessages(channelId){
     return;
   }
   msgs.forEach(m => appendMessageEl(m, false));
-  el.scrollTop = el.scrollHeight;
+  if(!opts || !opts.preserveScroll) el.scrollTop = el.scrollHeight;
 }
 
 function editedTag(m){
@@ -1250,6 +1293,46 @@ document.querySelectorAll('#filter-menu div').forEach(opt => {
     });
   });
 });
+
+/* ---------------- endless chat history (scroll-up pagination) ---------------- */
+document.getElementById('messages').addEventListener('scroll', function(){
+  if(this.scrollTop < 80) loadOlderMessages(state.activeChannelId);
+});
+
+/* ---------------- close-behavior: ask / minimize to tray / quit ---------------- */
+const closeConfirmModal = document.getElementById('close-confirm-modal');
+document.getElementById('close-confirm-tray').addEventListener('click', () => {
+  const remember = document.getElementById('close-confirm-remember').checked;
+  closeConfirmModal.classList.remove('show');
+  if(remember) setActiveCloseBehaviorPill('tray');
+  if(window.paradiseNative) window.paradiseNative.respondClose('tray', remember);
+});
+document.getElementById('close-confirm-quit').addEventListener('click', () => {
+  const remember = document.getElementById('close-confirm-remember').checked;
+  closeConfirmModal.classList.remove('show');
+  if(remember) setActiveCloseBehaviorPill('quit');
+  if(window.paradiseNative) window.paradiseNative.respondClose('quit', remember);
+});
+
+const closeBehaviorPills = document.getElementById('close-behavior-pills');
+function setActiveCloseBehaviorPill(value){
+  closeBehaviorPills.querySelectorAll('.pill-choice').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === value);
+  });
+}
+closeBehaviorPills.querySelectorAll('.pill-choice').forEach(btn => {
+  btn.addEventListener('click', () => {
+    setActiveCloseBehaviorPill(btn.dataset.value);
+    if(window.paradiseNative) window.paradiseNative.setCloseBehavior(btn.dataset.value);
+  });
+});
+if(window.paradiseNative){
+  window.paradiseNative.onConfirmClose(() => {
+    document.getElementById('close-confirm-remember').checked = false;
+    closeConfirmModal.classList.add('show');
+  });
+  window.paradiseNative.getCloseBehavior().then(value => setActiveCloseBehaviorPill(value || 'ask')).catch(() => {});
+}
 
 /* ---------------- window chrome (real OS window, via preload bridge) ---------------- */
 document.getElementById('brand-btn').addEventListener('click', () => document.getElementById('home-row').click());

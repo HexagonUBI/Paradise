@@ -153,7 +153,11 @@ class HarmonyClient extends EventTarget {
   async fetchMe(){ return this._rest('GET', '/users/@me'); }
   async fetchDMs(){ return this._rest('GET', '/users/@me/channels'); }
   async fetchGuilds(){ return this._rest('GET', '/users/@me/guilds'); }
-  async fetchMessages(channelId, limit){ return this._rest('GET', `/channels/${channelId}/messages?limit=${limit||50}`); }
+  async fetchMessages(channelId, limit, before){
+    let path = `/channels/${channelId}/messages?limit=${limit||50}`;
+    if(before) path += `&before=${encodeURIComponent(before)}`;
+    return this._rest('GET', path);
+  }
 
   async sendMessage(channelId, content, file){
     if(file){

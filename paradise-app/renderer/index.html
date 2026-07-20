@@ -388,6 +388,19 @@
     </div>
   </div>
 
+  <!-- CLOSE CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="close-confirm-modal">
+    <div class="modal-card">
+      <h3>Close Paradise?</h3>
+      <p class="close-confirm-desc">You can fully quit, or keep Paradise running in the background so you don&rsquo;t miss messages.</p>
+      <label class="close-confirm-remember">
+        <input type="checkbox" id="close-confirm-remember"> Remember my choice
+      </label>
+      <button class="settings-inline-btn" id="close-confirm-tray" style="width:100%;margin-top:14px;">Minimize to tray</button>
+      <button class="settings-inline-btn danger" id="close-confirm-quit" style="width:100%;margin-top:10px;">Close Paradise</button>
+    </div>
+  </div>
+
   <!-- SETTINGS MODAL -->
   <div class="modal-backdrop" id="settings-modal">
     <div class="settings-card">
@@ -438,6 +451,14 @@
           </div>
           <div class="setting-row">
             <div><div class="label">Instance</div><div class="desc" id="settings-instance-label">&mdash;</div></div>
+          </div>
+          <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+            <div><div class="label">When closing the window</div><div class="desc">Choose what the &times; button does</div></div>
+            <div class="close-behavior-pills" id="close-behavior-pills">
+              <button class="pill-choice" data-value="ask">Ask every time</button>
+              <button class="pill-choice" data-value="tray">Minimize to tray</button>
+              <button class="pill-choice" data-value="quit">Close Paradise</button>
+            </div>
           </div>
         </div>
 

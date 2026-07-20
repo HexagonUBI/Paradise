@@ -6,6 +6,23 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 const authFile = () => path.join(app.getPath('userData'), 'session.bin');
+const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
+
+// closeBehavior: 'ask' (default) | 'tray' | 'quit'
+function loadSettings(){
+  try {
+    if(!fs.existsSync(settingsFile())) return {};
+    return JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
+  } catch(err){ return {}; }
+}
+function saveSettings(patch){
+  try {
+    const merged = { ...loadSettings(), ...patch };
+    fs.writeFileSync(settingsFile(), JSON.stringify(merged));
+    return merged;
+  } catch(err){ console.error('saveSettings failed:', err); return loadSettings(); }
+}
+function getCloseBehavior(){ return loadSettings().closeBehavior || 'ask'; }
 
 function createWindow(){
   mainWindow = new BrowserWindow({
@@ -34,12 +51,18 @@ function createWindow(){
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('window-state', { maximized: false }));
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  // Closing the window minimizes to the tray instead of quitting (the tray icon
-  // would be pointless otherwise) — real exit happens via the tray's Quit item.
+  // Closing the window either quits the app or minimizes it to the tray,
+  // depending on the user's saved preference. If they haven't chosen yet,
+  // the renderer is asked to show a prompt so the user can decide (and
+  // optionally remember their choice for next time).
   mainWindow.on('close', (event) => {
     if(isQuitting || process.platform === 'darwin') return;
+    const behavior = getCloseBehavior();
+    if(behavior === 'tray'){ event.preventDefault(); mainWindow.hide(); return; }
+    if(behavior === 'quit'){ isQuitting = true; return; } // let the close proceed, app quits normally
+    // behavior === 'ask': hold the close and let the renderer show a confirm dialog
     event.preventDefault();
-    mainWindow.hide();
+    mainWindow.webContents.send('confirm-close');
   });
 
   // Open real links (e.g. attachment URLs, "learn more" links) in the OS browser, not inside the app.
@@ -96,6 +119,20 @@ ipcMain.on('window-maximize-toggle', () => {
 });
 ipcMain.on('window-close', () => mainWindow && mainWindow.close());
 ipcMain.handle('window-is-maximized', () => (mainWindow ? mainWindow.isMaximized() : false));
+
+// Response from the close-confirmation dialog shown in the renderer.
+ipcMain.on('close-response', (_event, { choice, remember }) => {
+  if(remember && (choice === 'quit' || choice === 'tray')) saveSettings({ closeBehavior: choice });
+  if(choice === 'quit'){ isQuitting = true; app.quit(); }
+  else if(mainWindow){ mainWindow.hide(); }
+});
+
+// Lets the Settings screen read/write the close-behavior preference directly.
+ipcMain.handle('close-behavior-get', () => getCloseBehavior());
+ipcMain.handle('close-behavior-set', (_event, value) => {
+  if(!['ask', 'tray', 'quit'].includes(value)) return getCloseBehavior();
+  return saveSettings({ closeBehavior: value }).closeBehavior;
+});
 
 ipcMain.on('open-external', (_event, url) => {
   if(typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
