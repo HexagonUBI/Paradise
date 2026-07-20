@@ -24,8 +24,8 @@ jobs:
             --arg commits "$COMMITS" \
             '{
               embeds: [{
-                title: "📦 New Push",
-                color: 16711680,
+                title: "Commit Push",
+                color: 5814783,
                 fields: [
                   {
                     name: "Repository",
