@@ -91,6 +91,7 @@ async function doConnect(val, silent){
     bootScreen.classList.add('hidden');
     connectScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
+    document.getElementById('login-username').focus();
     return true;
   } catch(err){
     if(!silent){
@@ -168,11 +169,13 @@ tabLogin.addEventListener('click', () => {
   tabLogin.classList.add('active'); tabRegister.classList.remove('active');
   loginFields.style.display = ''; registerFields.style.display = 'none';
   loginError.classList.remove('show');
+  document.getElementById('login-username').focus();
 });
 tabRegister.addEventListener('click', () => {
   tabRegister.classList.add('active'); tabLogin.classList.remove('active');
   registerFields.style.display = ''; loginFields.style.display = 'none';
   loginError.classList.remove('show');
+  document.getElementById('reg-username').focus();
 });
 
 function wireReadyState(fieldIds, btnId){
@@ -287,6 +290,7 @@ function showFatalAuthError(err){
   bootScreen.classList.add('hidden');
   connectScreen.classList.add('hidden');
   loginScreen.classList.remove('hidden');
+  document.getElementById('login-username').focus();
   loginError.textContent = 'Connected, but could not load your account: ' + (err.message || err);
   loginError.classList.add('show');
 }

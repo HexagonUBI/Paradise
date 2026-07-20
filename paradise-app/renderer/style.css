@@ -282,10 +282,9 @@
 
   .auth-field-group{margin-bottom:14px;}
   .auth-field-with-dropdown{display:flex;}
-  .auth-field-with-dropdown .auth-input{border-top-right-radius:0;border-bottom-right-radius:0;}
-  .auth-input-dropdown{width:38px;flex-shrink:0;border:none;background:#0C7DAF;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .auth-input-dropdown{width:38px;flex-shrink:0;border:none;border-radius:0;background:#0C7DAF;display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .auth-input-dropdown:hover{background:#0A6C99;}
-  .auth-input{width:100%;border:none;border-radius:8px;padding:13px 15px;font-size:14.5px;outline:none;background:#C7EDFC;color:#0B2733;}
+  .auth-input{width:100%;border:none;border-radius:0;padding:13px 15px;font-size:14.5px;outline:none;background:#C7EDFC;color:#0B2733;}
   .auth-input::placeholder{color:#4E7A8C;}
   .auth-input:focus{background:#fff;}
   .auth-hint{font-size:11.5px;color:rgba(255,255,255,.85);margin:-4px 0 14px;line-height:1.5;}
