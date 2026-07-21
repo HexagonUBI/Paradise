@@ -19,29 +19,84 @@ jobs:
         run: |
           node <<'EOF'
           const fs = require('fs');
-          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
-          const commits=(event.commits||[]).map(c=>`• ${c.author.name}: ${c.message} (${c.id.substring(0,7)})`).join("\n");
-          const branch=process.env.GITHUB_REF.replace('refs/heads/','');
-          const content=[
-            "📦 **New Push**",
-            "",
-            `**Repository:** ${process.env.GITHUB_REPOSITORY}`,
-            `**Branch:** ${branch}`,
-            `**Pushed by:** ${process.env.GITHUB_ACTOR}`,
-            "",
-            "**Commits:**",
-            commits,
-            "",
-            process.env.GITHUB_COMPARE
-          ].join("\n");
-          fetch(process.env.FERMI_WEBHOOK,{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({content})
-          }).then(async r=>{
-            console.log("HTTP",r.status);
-            const t=await r.text();
-            if(t) console.log(t);
-            if(!r.ok) process.exit(1);
-          }).catch(e=>{console.error(e);process.exit(1);});
+
+          (async () => {
+            const webhookUrl = process.env.FERMI_WEBHOOK;
+            if (!webhookUrl) {
+              console.error("Error: FERMI_WEBHOOK secret is missing or empty.");
+              process.exit(1);
+            }
+
+            let event = {};
+            try {
+              event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+            } catch (err) {
+              console.error("Failed to parse GitHub event payload:", err);
+            }
+
+            const branch = process.env.GITHUB_REF ? process.env.GITHUB_REF.replace('refs/heads/', '') : 'unknown';
+            const repo = process.env.GITHUB_REPOSITORY || 'unknown';
+            const actor = process.env.GITHUB_ACTOR || 'unknown';
+            const compareUrl = process.env.GITHUB_COMPARE && process.env.GITHUB_COMPARE !== 'undefined' ? process.env.GITHUB_COMPARE : '';
+
+            // Format commit messages (taking first line of each commit message)
+            const commitList = (event.commits || []).map(c => {
+              const firstLine = (c.message || '').split('\n')[0];
+              const sha = (c.id || '').substring(0, 7);
+              const author = c.author ? c.author.name : 'Unknown';
+              return `• **${author}**: ${firstLine} (\`${sha}\`)`;
+            });
+
+            let commitsText = commitList.join('\n');
+            if (!commitsText) commitsText = '_No commit details available_';
+
+            // Ensure content doesn't exceed Spacebar / Discord limits (~2000 chars)
+            if (commitsText.length > 1500) {
+              commitsText = commitsText.substring(0, 1470) + '\n... (truncated)';
+            }
+
+            const contentParts = [
+              "📦 **New Push**",
+              "",
+              `**Repository:** ${repo}`,
+              `**Branch:** ${branch}`,
+              `**Pushed by:** ${actor}`,
+              "",
+              "**Commits:**",
+              commitsText
+            ];
+
+            if (compareUrl) {
+              contentParts.push("", compareUrl);
+            }
+
+            const content = contentParts.join('\n');
+
+            try {
+              const response = await fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "User-Agent": "GitHub-Actions-Spacebar-Webhook/1.0"
+                },
+                body: JSON.stringify({
+                  username: "Fermi Commit Tracker",
+                  content: content
+                })
+              });
+
+              console.log("HTTP Status:", response.status);
+              const responseText = await response.text();
+              if (responseText) console.log("Response:", responseText);
+
+              if (!response.ok) {
+                console.error(`Webhook request failed with status ${response.status}`);
+                process.exit(1);
+              }
+              console.log("Notification sent successfully!");
+            } catch (error) {
+              console.error("Network/Fetch Error:", error);
+              process.exit(1);
+            }
+          })();
           EOF
