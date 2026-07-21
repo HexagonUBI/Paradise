@@ -1,40 +1,34 @@
-name: Commit Tracker (Spacebar)
+- name: Send Spacebar notification
+  env:
+    FERMI_WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
+  run: |
+    COMMITS=$(jq -r '.commits[] |
+      "- \(.author.name): \(.message) (`" + (.id[0:7]) + "`)"
+    ' "$GITHUB_EVENT_PATH")
 
-on:
-  push:
+    jq -n \
+      --arg repo "${{ github.repository }}" \
+      --arg branch "${GITHUB_REF#refs/heads/}" \
+      --arg actor "${{ github.actor }}" \
+      --arg commits "$COMMITS" \
+      --arg compare "${{ github.event.compare }}" \
+      '{
+        content:
+          "📦 **New Push**\n\n" +
+          "**Repository:** " + $repo + "\n" +
+          "**Branch:** " + $branch + "\n" +
+          "**Pushed by:** " + $actor + "\n\n" +
+          "**Commits:**\n" +
+          $commits + "\n\n" +
+          $compare
+      }' > payload.json
 
-jobs:
-  notify:
-    runs-on: ubuntu-latest
+    cat payload.json
 
-    steps:
-      - name: Send Spacebar notification
-        env:
-          FERMI_WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
-        run: |
-          COMMITS=$(jq -r '.commits[] |
-            "- \(.author.name): \(.message) (`" + (.id[0:7]) + "`)"
-          ' "$GITHUB_EVENT_PATH")
-
-          MESSAGE=$(cat <<EOF
-📦 **New Push**
-
-**Repository:** ${{ github.repository }}
-**Branch:** ${GITHUB_REF#refs/heads/}
-**Pushed by:** ${{ github.actor }}
-
-**Commits:**
-$COMMITS
-
-🔗 ${{ github.event.compare }}
-EOF
-)
-
-          curl \
-            --fail-with-body \
-            --show-error \
-            --silent \
-            --write-out "\nHTTP %{http_code}\n" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg content "$MESSAGE" '{content:$content}')" \
-            "$FERMI_WEBHOOK"
+    curl \
+      --fail-with-body \
+      --show-error \
+      --write-out "\nHTTP %{http_code}\n" \
+      -H "Content-Type: application/json" \
+      -d @payload.json \
+      "$FERMI_WEBHOOK"
