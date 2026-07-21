@@ -116,7 +116,7 @@ document.getElementById('login-back-2').addEventListener('click', () => {
 });
 
 document.getElementById('auth-social-trello').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
-document.getElementById('auth-social-github').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise'));
+document.getElementById('auth-social-github').addEventListener('click', () => openExternalLink('https://github.com/HexagonUBI/Paradise'));
 document.getElementById('auth-social-discord').addEventListener('click', () => showToast('Not set up yet \u2014 check back soon'));
 
 async function saveSession(){
@@ -321,7 +321,19 @@ client.addEventListener('message', (e) => {
     appendMessageEl(msg);
     if((msg.attachments || []).some(a => a.content_type && a.content_type.startsWith('image/'))) renderMediaGrid(msg.channel_id);
   } else {
-    bumpUnread(msg.channel_id);
+    const known = state.dmChannels.some(ch => ch.id === msg.channel_id);
+    if(!known){
+      // We don't have this channel yet (a missed/out-of-order channel-create,
+      // or a channel that existed before this session started some other way) -
+      // recover by re-pulling the DM list instead of silently losing the unread ping.
+      client.fetchDMs().then(channels => {
+        state.dmChannels = channels || [];
+        renderDmList();
+        bumpUnread(msg.channel_id);
+      }).catch(() => {});
+    } else {
+      bumpUnread(msg.channel_id);
+    }
     if(state.settings.notif){
       const authorName = msg.author ? msg.author.username : 'Someone';
       showToast(authorName + ': ' + (msg.content || '[attachment]'));
@@ -636,6 +648,18 @@ document.getElementById('add-friend-input').addEventListener('keydown', e => { i
 
 client.addEventListener('relationship-add', () => loadFriends());
 client.addEventListener('relationship-remove', () => loadFriends());
+
+// A brand-new DM/group channel someone just started with us. Without this,
+// the very first message in a new conversation has nowhere to attach to in
+// the UI (no sidebar item to bump unread on, no cache entry) until the whole
+// app is restarted and READY re-fetches private_channels from scratch.
+client.addEventListener('channel-create', (e) => {
+  const ch = e.detail;
+  if(!ch || !ch.id) return;
+  if(state.dmChannels.some(existing => existing.id === ch.id)) return;
+  state.dmChannels.unshift(ch);
+  renderDmList();
+});
 
 function dmDisplayInfo(channel){
   const meId = client.user ? client.user.id : null;
@@ -1212,15 +1236,69 @@ function openExternalLink(url){
 const notConfiguredYet = () => showToast('Not set up yet \u2014 check back soon');
 
 document.getElementById('settings-social-trello').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
-document.getElementById('settings-social-github').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise'));
+document.getElementById('settings-social-github').addEventListener('click', () => openExternalLink('https://github.com/HexagonUBI/Paradise'));
 document.getElementById('settings-social-discord').addEventListener('click', notConfiguredYet);
 document.getElementById('settings-link-roadmap').addEventListener('click', () => openExternalLink('https://trello.com/b/ZQVstPXp/paradise-roadmap'));
-document.getElementById('settings-link-report').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
-document.getElementById('settings-link-suggest').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
-document.getElementById('settings-link-feedback').addEventListener('click', () => openExternalLink('https://github.com/SimpleFoxOfficial/Paradise/issues'));
+document.getElementById('settings-link-report').addEventListener('click', () => openExternalLink('https://github.com/HexagonUBI/Paradise/issues'));
+document.getElementById('settings-link-suggest').addEventListener('click', () => openExternalLink('https://github.com/HexagonUBI/Paradise/issues'));
+document.getElementById('settings-link-feedback').addEventListener('click', () => openExternalLink('https://github.com/HexagonUBI/Paradise/issues'));
 document.getElementById('settings-link-help').addEventListener('click', notConfiguredYet);
 document.getElementById('settings-link-status').addEventListener('click', notConfiguredYet);
-document.getElementById('settings-update-btn').addEventListener('click', notConfiguredYet);
+
+/* ---------------- auto-update ---------------- */
+(function initUpdater(){
+  const settingsRow = document.getElementById('settings-update-row');
+  const settingsBtn = document.getElementById('settings-update-btn');
+  const titlebarBtn = document.getElementById('titlebar-update-btn');
+  const versionEl = document.getElementById('settings-version-id');
+
+  if(window.paradiseNative && window.paradiseNative.getAppVersion){
+    window.paradiseNative.getAppVersion().then(v => { if(v) versionEl.textContent = v; }).catch(() => {});
+  }
+  if(!window.paradiseNative || !window.paradiseNative.onUpdateAvailable) return;
+
+  function showUpdateUI(info){
+    settingsRow.classList.remove('hidden');
+    titlebarBtn.classList.remove('hidden');
+    if(info && info.version) titlebarBtn.title = `Version ${info.version} is available \u2014 click to download`;
+  }
+
+  function startDownload(){
+    settingsBtn.disabled = true;
+    titlebarBtn.disabled = true;
+    titlebarBtn.title = 'Downloading update\u2026';
+    showToast('Downloading the latest version\u2026');
+    window.paradiseNative.startUpdateDownload();
+  }
+  settingsBtn.addEventListener('click', startDownload);
+  titlebarBtn.addEventListener('click', startDownload);
+
+  // Covers both timing cases: the check finishing after we've already loaded
+  // (event), and the check having already finished before we registered (poll).
+  window.paradiseNative.getPendingUpdate().then(info => { if(info) showUpdateUI(info); }).catch(() => {});
+  window.paradiseNative.onUpdateAvailable(showUpdateUI);
+
+  window.paradiseNative.onUpdateDownloadProgress((progress) => {
+    const pct = progress && progress.percent ? Math.round(progress.percent) : 0;
+    titlebarBtn.title = `Downloading update\u2026 ${pct}%`;
+  });
+  window.paradiseNative.onUpdateDownloaded(() => {
+    showToast('Update downloaded \u2014 Paradise is restarting itself to finish\u2026');
+  });
+  window.paradiseNative.onUpdateManual((info) => {
+    settingsBtn.disabled = false;
+    titlebarBtn.disabled = false;
+    titlebarBtn.title = 'Update available — click to download';
+    showToast('Downloaded \u2014 opened the file so you can install it (this build type can\u2019t update itself automatically).');
+    void info;
+  });
+  window.paradiseNative.onUpdateError((info) => {
+    settingsBtn.disabled = false;
+    titlebarBtn.disabled = false;
+    titlebarBtn.title = 'Update available — click to download';
+    showToast((info && info.message) ? `Update failed: ${info.message}` : 'Update failed \u2014 try again later.');
+  });
+})();
 
 /* ---------------- profile overview modal ---------------- */
 const overviewModal = document.getElementById('profile-overview-modal');

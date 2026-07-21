@@ -1,0 +1,67 @@
+{
+  "name": "paradise-installer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build tooling that packages ../paradise-app into a real installer (NSIS/dmg/AppImage/deb) plus a plain zip of the app files, and publishes them to GitHub Releases. This is not part of the Paradise app itself - it's the separate tool that builds and ships it, kept in its own folder/package.json on purpose (electron-builder's \"two package.json\" setup) so the app's own dependencies stay untouched by build tooling. The NSIS/dmg installer is only ever needed for the very first install; the zip/AppImage is what the running app downloads to update itself in place.",
+  "scripts": {
+    "dist": "electron-builder",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "release": "electron-builder --publish always"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "chat.paradise.app",
+    "productName": "Paradise",
+    "electronVersion": "31.7.7",
+    "directories": {
+      "app": "../paradise-app",
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "HexagonUBI",
+        "repo": "Paradise"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "../paradise-app/assets/icon.png",
+      "category": "Network",
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "../paradise-app/assets/icon.ico",
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "../paradise-app/assets/icon.png",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    }
+  }
+}

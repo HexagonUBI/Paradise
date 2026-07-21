@@ -19,5 +19,13 @@ contextBridge.exposeInMainWorld('paradiseNative', {
   respondClose: (choice, remember) => ipcRenderer.send('close-response', { choice, remember }),
   getCloseBehavior: () => ipcRenderer.invoke('close-behavior-get'),
   setCloseBehavior: (value) => ipcRenderer.invoke('close-behavior-set', value),
+  getAppVersion: () => ipcRenderer.invoke('app-get-version'),
+  getPendingUpdate: () => ipcRenderer.invoke('update-get-pending'),
+  onUpdateAvailable: (callback) => { ipcRenderer.on('update-available', (_event, info) => callback(info)); },
+  onUpdateDownloadProgress: (callback) => { ipcRenderer.on('update-download-progress', (_event, progress) => callback(progress)); },
+  onUpdateDownloaded: (callback) => { ipcRenderer.on('update-downloaded', () => callback()); },
+  onUpdateManual: (callback) => { ipcRenderer.on('update-manual', (_event, info) => callback(info)); },
+  onUpdateError: (callback) => { ipcRenderer.on('update-error', (_event, info) => callback(info)); },
+  startUpdateDownload: () => ipcRenderer.send('update-start-download'),
   platform: process.platform,
 });
