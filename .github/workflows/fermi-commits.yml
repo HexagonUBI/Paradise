@@ -6,7 +6,6 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-
     steps:
       - name: Send commit notification to Spacebar
         env:
@@ -16,53 +15,33 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_COMPARE: ${{ github.event.compare }}
-
+        shell: bash
         run: |
           node <<'EOF'
           const fs = require('fs');
-
-          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-
-          const commits = (event.commits || [])
-            .map(c => `• ${c.author.name}: ${c.message} (${c.id.substring(0,7)})`)
-            .join('\n');
-
-          const branch = process.env.GITHUB_REF.replace('refs/heads/', '');
-
-          const content = [
-  "📦 **New Push**",
-  "",
-  `**Repository:** ${process.env.GITHUB_REPOSITORY}`,
-  `**Branch:** ${branch}`,
-  `**Pushed by:** ${process.env.GITHUB_ACTOR}`,
-  "",
-  "**Commits:**",
-  commits,
-  "",
-  process.env.GITHUB_COMPARE
-  ].join("\n");
-          fetch(process.env.FERMI_WEBHOOK, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              content
-            })
-          })
-          .then(async res => {
-            console.log("HTTP", res.status);
-
-            const body = await res.text();
-
-            if (body.length)
-              console.log(body);
-
-            if (!res.ok)
-              process.exit(1);
-          })
-          .catch(err => {
-            console.error(err);
-            process.exit(1);
-          });
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+          const commits=(event.commits||[]).map(c=>`• ${c.author.name}: ${c.message} (${c.id.substring(0,7)})`).join("\n");
+          const branch=process.env.GITHUB_REF.replace('refs/heads/','');
+          const content=[
+            "📦 **New Push**",
+            "",
+            `**Repository:** ${process.env.GITHUB_REPOSITORY}`,
+            `**Branch:** ${branch}`,
+            `**Pushed by:** ${process.env.GITHUB_ACTOR}`,
+            "",
+            "**Commits:**",
+            commits,
+            "",
+            process.env.GITHUB_COMPARE
+          ].join("\n");
+          fetch(process.env.FERMI_WEBHOOK,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({content})
+          }).then(async r=>{
+            console.log("HTTP",r.status);
+            const t=await r.text();
+            if(t) console.log(t);
+            if(!r.ok) process.exit(1);
+          }).catch(e=>{console.error(e);process.exit(1);});
           EOF
