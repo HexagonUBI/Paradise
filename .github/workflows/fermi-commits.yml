@@ -29,18 +29,18 @@ jobs:
 
           const branch = process.env.GITHUB_REF.replace('refs/heads/', '');
 
-          const content =
-`📦 **New Push**
-
-**Repository:** ${process.env.GITHUB_REPOSITORY}
-**Branch:** ${branch}
-**Pushed by:** ${process.env.GITHUB_ACTOR}
-
-**Commits:**
-${commits}
-
-${process.env.GITHUB_COMPARE}`;
-
+          const content = [
+  "📦 **New Push**",
+  "",
+  `**Repository:** ${process.env.GITHUB_REPOSITORY}`,
+  `**Branch:** ${branch}`,
+  `**Pushed by:** ${process.env.GITHUB_ACTOR}`,
+  "",
+  "**Commits:**",
+  commits,
+  "",
+  process.env.GITHUB_COMPARE
+  ].join("\n");
           fetch(process.env.FERMI_WEBHOOK, {
             method: 'POST',
             headers: {
