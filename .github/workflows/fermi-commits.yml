@@ -38,15 +38,13 @@ jobs:
 
           **Commits:**
           $COMMITS
-
-          $COMPARE
           EOF
           )
 
           # Explicitly setting avatar_url bypasses Spacebar's broken internal avatar resolution
           PAYLOAD=$(jq -n \
             --arg content "$MESSAGE" \
-            --arg username "Fermi Commit Tracker" \
+            --arg username "GitHub" \
             --arg avatar_url "https://github.githubassets.com/favicons/favicon.png" \
             '{username: $username, content: $content, avatar_url: $avatar_url}')
 
