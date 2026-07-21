@@ -9,94 +9,69 @@ jobs:
     steps:
       - name: Send commit notification to Spacebar
         env:
-          FERMI_WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_COMPARE: ${{ github.event.compare }}
-        shell: bash
+          WEBHOOK_URL: ${{ secrets.FERMI_WEBHOOK }}
+          EVENT_JSON: ${{ toJson(github.event) }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          PUSHER: ${{ github.actor }}
+          COMPARE: ${{ github.event.compare }}
         run: |
-          node <<'EOF'
-          const fs = require('fs');
+          # 1. Sanity check: Ensure secret is not empty
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "❌ ERROR: FERMI_WEBHOOK secret is missing or empty!"
+            echo "Please go to Settings > Secrets and variables > Actions and add FERMI_WEBHOOK."
+            exit 1
+          fi
 
-          (async () => {
-            const webhookUrl = process.env.FERMI_WEBHOOK;
-            if (!webhookUrl) {
-              console.error("Error: FERMI_WEBHOOK secret is missing or empty.");
-              process.exit(1);
-            }
+          # 2. Append ?wait=true so Spacebar returns the actual HTTP response/error
+          TARGET_URL="${WEBHOOK_URL}?wait=true"
 
-            let event = {};
-            try {
-              event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-            } catch (err) {
-              console.error("Failed to parse GitHub event payload:", err);
-            }
+          # 3. Extract commits using jq
+          COMMITS=$(echo "$EVENT_JSON" | jq -r '.commits // [] | map("• " + .author.name + ": " + (.message | split("\n")[0]) + " (`" + .id[0:7] + "`)") | join("\n")')
 
-            const branch = process.env.GITHUB_REF ? process.env.GITHUB_REF.replace('refs/heads/', '') : 'unknown';
-            const repo = process.env.GITHUB_REPOSITORY || 'unknown';
-            const actor = process.env.GITHUB_ACTOR || 'unknown';
-            const compareUrl = process.env.GITHUB_COMPARE && process.env.GITHUB_COMPARE !== 'undefined' ? process.env.GITHUB_COMPARE : '';
+          if [ -z "$COMMITS" ]; then
+            COMMITS="_No commit details available_"
+          fi
 
-            // Format commit messages (taking first line of each commit message)
-            const commitList = (event.commits || []).map(c => {
-              const firstLine = (c.message || '').split('\n')[0];
-              const sha = (c.id || '').substring(0, 7);
-              const author = c.author ? c.author.name : 'Unknown';
-              return `• **${author}**: ${firstLine} (\`${sha}\`)`;
-            });
+          # 4. Construct payload message
+          MESSAGE=$(cat <<EOF
+          📦 **New Push**
 
-            let commitsText = commitList.join('\n');
-            if (!commitsText) commitsText = '_No commit details available_';
+          **Repository:** $REPO
+          **Branch:** $BRANCH
+          **Pushed by:** $PUSHER
 
-            // Ensure content doesn't exceed Spacebar / Discord limits (~2000 chars)
-            if (commitsText.length > 1500) {
-              commitsText = commitsText.substring(0, 1470) + '\n... (truncated)';
-            }
+          **Commits:**
+          $COMMITS
 
-            const contentParts = [
-              "📦 **New Push**",
-              "",
-              `**Repository:** ${repo}`,
-              `**Branch:** ${branch}`,
-              `**Pushed by:** ${actor}`,
-              "",
-              "**Commits:**",
-              commitsText
-            ];
-
-            if (compareUrl) {
-              contentParts.push("", compareUrl);
-            }
-
-            const content = contentParts.join('\n');
-
-            try {
-              const response = await fetch(webhookUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "User-Agent": "GitHub-Actions-Spacebar-Webhook/1.0"
-                },
-                body: JSON.stringify({
-                  username: "Fermi Commit Tracker",
-                  content: content
-                })
-              });
-
-              console.log("HTTP Status:", response.status);
-              const responseText = await response.text();
-              if (responseText) console.log("Response:", responseText);
-
-              if (!response.ok) {
-                console.error(`Webhook request failed with status ${response.status}`);
-                process.exit(1);
-              }
-              console.log("Notification sent successfully!");
-            } catch (error) {
-              console.error("Network/Fetch Error:", error);
-              process.exit(1);
-            }
-          })();
+          $COMPARE
           EOF
+          )
+
+          # 5. Format payload as valid JSON safely
+          PAYLOAD=$(jq -n \
+            --arg content "$MESSAGE" \
+            --arg username "Fermi Commit Tracker" \
+            '{username: $username, content: $content}')
+
+          echo "Sending payload to Spacebar..."
+
+          # 6. Post request using curl
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET_URL" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions-Spacebar-Webhook/1.0" \
+            -d "$PAYLOAD")
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS/d')
+
+          echo "Response Body: $BODY"
+          echo "HTTP Status Code: $HTTP_STATUS"
+
+          # 7. Fail the step if HTTP status is not 200 or 204
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 204 ]; then
+            echo "❌ Failed to send webhook! HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "✅ Webhook successfully sent to Spacebar!"
