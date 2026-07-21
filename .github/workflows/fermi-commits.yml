@@ -16,24 +16,19 @@ jobs:
           PUSHER: ${{ github.actor }}
           COMPARE: ${{ github.event.compare }}
         run: |
-          # 1. Sanity check: Ensure secret is not empty
           if [ -z "$WEBHOOK_URL" ]; then
             echo "❌ ERROR: FERMI_WEBHOOK secret is missing or empty!"
-            echo "Please go to Settings > Secrets and variables > Actions and add FERMI_WEBHOOK."
             exit 1
           fi
 
-          # 2. Append ?wait=true so Spacebar returns the actual HTTP response/error
           TARGET_URL="${WEBHOOK_URL}?wait=true"
 
-          # 3. Extract commits using jq
           COMMITS=$(echo "$EVENT_JSON" | jq -r '.commits // [] | map("• " + .author.name + ": " + (.message | split("\n")[0]) + " (`" + .id[0:7] + "`)") | join("\n")')
 
           if [ -z "$COMMITS" ]; then
             COMMITS="_No commit details available_"
           fi
 
-          # 4. Construct payload message
           MESSAGE=$(cat <<EOF
           📦 **New Push**
 
@@ -48,15 +43,15 @@ jobs:
           EOF
           )
 
-          # 5. Format payload as valid JSON safely
+          # Explicitly setting avatar_url bypasses Spacebar's broken internal avatar resolution
           PAYLOAD=$(jq -n \
             --arg content "$MESSAGE" \
             --arg username "Fermi Commit Tracker" \
-            '{username: $username, content: $content}')
+            --arg avatar_url "https://github.githubassets.com/favicons/favicon.png" \
+            '{username: $username, content: $content, avatar_url: $avatar_url}')
 
           echo "Sending payload to Spacebar..."
 
-          # 6. Post request using curl
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET_URL" \
             -H "Content-Type: application/json" \
             -H "User-Agent: GitHub-Actions-Spacebar-Webhook/1.0" \
@@ -68,7 +63,6 @@ jobs:
           echo "Response Body: $BODY"
           echo "HTTP Status Code: $HTTP_STATUS"
 
-          # 7. Fail the step if HTTP status is not 200 or 204
           if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 204 ]; then
             echo "❌ Failed to send webhook! HTTP Status: $HTTP_STATUS"
             exit 1
