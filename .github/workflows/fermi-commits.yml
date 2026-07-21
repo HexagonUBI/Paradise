@@ -1,0 +1,58 @@
+name: Spacebar Commit Tracker
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Spacebar notification
+        env:
+          WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
+        run: |
+          COMMITS=$(jq -r '.commits[] | "- **\(.author.name)**: \(.message) (`" + (.id[0:7]) + "`)"' "$GITHUB_EVENT_PATH")
+
+          PAYLOAD=$(jq -n \
+            --arg repo "${{ github.repository }}" \
+            --arg branch "${GITHUB_REF#refs/heads/}" \
+            --arg actor "${{ github.actor }}" \
+            --arg compare "${{ github.event.compare }}" \
+            --arg commits "$COMMITS" \
+            '{
+              embeds: [{
+                title: "Commit Push",
+                color: 5814783,
+                fields: [
+                  {
+                    name: "Repository",
+                    value: $repo,
+                    inline: true
+                  },
+                  {
+                    name: "Branch",
+                    value: $branch,
+                    inline: true
+                  },
+                  {
+                    name: "Pushed by",
+                    value: $actor,
+                    inline: true
+                  },
+                  {
+                    name: "Commits",
+                    value: $commits
+                  }
+                ],
+                url: $compare,
+                timestamp: now | todateiso8601
+              }]
+            }')
+
+          curl \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$WEBHOOK"
