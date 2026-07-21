@@ -1,4 +1,4 @@
-name: Spacebar Commit Tracker
+name: Discord Commit Tracker
 
 on:
   push:
@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send Spacebar notification
+      - name: Send Discord notification
         env:
-          WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
+          FERMI_WEBHOOK: ${{ secrets.FERMI_WEBHOOK }}
         run: |
           COMMITS=$(jq -r '.commits[] | "- **\(.author.name)**: \(.message) (`" + (.id[0:7]) + "`)"' "$GITHUB_EVENT_PATH")
 
@@ -55,4 +55,4 @@ jobs:
           curl \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
-            "$WEBHOOK"
+            "$FERMI_WEBHOOK"
