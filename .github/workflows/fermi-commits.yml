@@ -1,4 +1,4 @@
-name: Fermi Commit Tracker
+name: GitHub-Spacebar
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
           fi
 
           MESSAGE=$(cat <<EOF
-          📦 **New Push**
+          **Commit Push**
 
           **Repository:** $REPO
           **Branch:** $BRANCH
