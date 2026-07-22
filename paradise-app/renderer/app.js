@@ -1251,6 +1251,7 @@ document.getElementById('settings-link-status').addEventListener('click', notCon
   const settingsBtn = document.getElementById('settings-update-btn');
   const titlebarBtn = document.getElementById('titlebar-update-btn');
   const versionEl = document.getElementById('settings-version-id');
+  const updateTextEl = document.getElementById('settings-update-text');
 
   if(window.paradiseNative && window.paradiseNative.getAppVersion){
     window.paradiseNative.getAppVersion().then(v => { if(v) versionEl.textContent = v; }).catch(() => {});
@@ -1260,6 +1261,7 @@ document.getElementById('settings-link-status').addEventListener('click', notCon
   function showUpdateUI(info){
     settingsRow.classList.remove('hidden');
     titlebarBtn.classList.remove('hidden');
+    updateTextEl.textContent = (info && info.version) ? `A new update is available (${info.version}).` : 'A new update is available.';
     if(info && info.version) titlebarBtn.title = `Version ${info.version} is available \u2014 click to download`;
   }
 

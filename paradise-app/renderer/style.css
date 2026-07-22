@@ -346,24 +346,25 @@
   .settings-close-x{position:absolute;top:26px;left:26px;width:26px;height:26px;border:none;background:none;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
   .settings-close-x:hover{background:#0000001a;}
 
-  .settings-sidebar{width:320px;flex-shrink:0;background:#F0F4F8;display:flex;flex-direction:column;padding:70px 0 16px;}
-  .settings-sidebar h2{margin:0 24px 20px;font-size:26px;font-weight:800;color:#000;}
+  .settings-sidebar{width:320px;flex-shrink:0;background:#F0F4F8;display:flex;flex-direction:column;padding:64px 0 16px;}
+  .settings-sidebar h2{margin:0 24px 14px;font-size:26px;font-weight:800;color:#000;}
   .settings-nav{display:flex;flex-direction:column;flex:1;overflow-y:auto;}
-  .settings-nav-item{text-align:left;border:none;background:none;padding:18px 24px;font-size:16px;font-weight:700;color:#000;cursor:pointer;}
+  .settings-nav-item{text-align:left;border:none;background:none;padding:13px 24px;font-size:16px;font-weight:700;color:#000;cursor:pointer;}
   .settings-nav-item:hover{background:#E4ECF1;}
   .settings-nav-item.active{background:#C7EDFC;color:#000;}
-  .settings-sidebar-footer{display:flex;flex-direction:column;gap:12px;padding:16px 24px 20px;}
+  .settings-sidebar-footer{display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid var(--border);flex-shrink:0;}
   .settings-social-row{display:flex;gap:18px;}
   .settings-social{width:20px;height:20px;border:none;cursor:pointer;padding:0;background-color:#818181;-webkit-mask-size:contain;-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;mask-size:contain;mask-repeat:no-repeat;mask-position:center;}
   .settings-social:hover{background-color:var(--sky);}
   #settings-social-trello{-webkit-mask-image:url(../assets/socials/trello_icon.svg);mask-image:url(../assets/socials/trello_icon.svg);}
   #settings-social-discord{-webkit-mask-image:url(../assets/socials/clyde_icon.svg);mask-image:url(../assets/socials/clyde_icon.svg);}
   #settings-social-github{-webkit-mask-image:url(../assets/socials/github_icon.svg);mask-image:url(../assets/socials/github_icon.svg);}
-  .settings-patch-notes-link{align-self:flex-start;border:none;background:none;padding:0;font-size:12.5px;font-weight:700;color:#818181;cursor:pointer;}
+  .settings-patch-notes-link{border:none;background:none;padding:0;font-size:12.5px;font-weight:700;color:#818181;cursor:pointer;}
   .settings-patch-notes-link:hover{color:var(--sky);}
 
   /* ---------- patch notes modal ---------- */
   .patch-notes-card{width:560px;max-width:92vw;height:640px;max-height:88vh;border-radius:5px;background:#fff;box-shadow:3px 3px 5px rgba(15,50,75,.25);position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .patch-notes-card .settings-close-x{left:auto;right:22px;top:22px;}
   .patch-notes-body{flex:1;display:flex;flex-direction:column;min-height:0;padding:28px 30px 24px;}
   .patch-notes-body h2{margin:0 0 16px;font-size:22px;}
   .patch-notes-list{flex:1;overflow-y:auto;padding-right:4px;}
