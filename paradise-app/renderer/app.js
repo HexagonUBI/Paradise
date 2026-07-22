@@ -305,7 +305,7 @@ client.addEventListener('ready', (e) => {
   }
   if(Array.isArray(d.private_channels) && d.private_channels.length){
     state.dmChannels = d.private_channels;
-    renderDmList();
+    if(state.mode === 'dms') renderDmList();
   }
   if(Array.isArray(d.guilds) && d.guilds.length){
     state.guilds = d.guilds.map(g => g.properties || g);
@@ -328,7 +328,7 @@ client.addEventListener('message', (e) => {
       // recover by re-pulling the DM list instead of silently losing the unread ping.
       client.fetchDMs().then(channels => {
         state.dmChannels = channels || [];
-        renderDmList();
+        if(state.mode === 'dms') renderDmList();
         bumpUnread(msg.channel_id);
       }).catch(() => {});
     } else {
@@ -658,7 +658,7 @@ client.addEventListener('channel-create', (e) => {
   if(!ch || !ch.id) return;
   if(state.dmChannels.some(existing => existing.id === ch.id)) return;
   state.dmChannels.unshift(ch);
-  renderDmList();
+  if(state.mode === 'dms') renderDmList();
 });
 
 function dmDisplayInfo(channel){
@@ -1377,21 +1377,11 @@ document.getElementById('messages').addEventListener('scroll', function(){
   if(this.scrollTop < 80) loadOlderMessages(state.activeChannelId);
 });
 
-/* ---------------- close-behavior: ask / minimize to tray / quit ---------------- */
-const closeConfirmModal = document.getElementById('close-confirm-modal');
-document.getElementById('close-confirm-tray').addEventListener('click', () => {
-  const remember = document.getElementById('close-confirm-remember').checked;
-  closeConfirmModal.classList.remove('show');
-  if(remember) setActiveCloseBehaviorPill('tray');
-  if(window.paradiseNative) window.paradiseNative.respondClose('tray', remember);
-});
-document.getElementById('close-confirm-quit').addEventListener('click', () => {
-  const remember = document.getElementById('close-confirm-remember').checked;
-  closeConfirmModal.classList.remove('show');
-  if(remember) setActiveCloseBehaviorPill('quit');
-  if(window.paradiseNative) window.paradiseNative.respondClose('quit', remember);
-});
-
+/* ---------------- close-behavior: ask / minimize to tray / quit ----------------
+   The actual "close Paradise?" confirmation is now a real separate OS window
+   (see main.js showCloseConfirmWindow) styled like a native app-quit dialog,
+   not an in-page overlay - this block only drives the Settings > General pill
+   control for the underlying preference. */
 const closeBehaviorPills = document.getElementById('close-behavior-pills');
 function setActiveCloseBehaviorPill(value){
   closeBehaviorPills.querySelectorAll('.pill-choice').forEach(btn => {
@@ -1405,11 +1395,11 @@ closeBehaviorPills.querySelectorAll('.pill-choice').forEach(btn => {
   });
 });
 if(window.paradiseNative){
-  window.paradiseNative.onConfirmClose(() => {
-    document.getElementById('close-confirm-remember').checked = false;
-    closeConfirmModal.classList.add('show');
-  });
   window.paradiseNative.getCloseBehavior().then(value => setActiveCloseBehaviorPill(value || 'ask')).catch(() => {});
+  // Keeps the Settings pill in sync if "remember my choice" was checked in the separate confirm window.
+  if(window.paradiseNative.onCloseBehaviorChanged){
+    window.paradiseNative.onCloseBehaviorChanged((value) => setActiveCloseBehaviorPill(value || 'ask'));
+  }
 }
 
 /* ---------------- window chrome (real OS window, via preload bridge) ---------------- */

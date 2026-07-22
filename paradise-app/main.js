@@ -5,6 +5,7 @@ const https = require('https');
 const { spawn } = require('child_process');
 
 let mainWindow = null;
+let closeConfirmWindow = null;
 let tray = null;
 let isQuitting = false;
 const authFile = () => path.join(app.getPath('userData'), 'session.bin');
@@ -25,6 +26,37 @@ function saveSettings(patch){
   } catch(err){ console.error('saveSettings failed:', err); return loadSettings(); }
 }
 function getCloseBehavior(){ return loadSettings().closeBehavior || 'ask'; }
+
+// A real, separate OS window (modal to mainWindow, so it blocks interaction
+// with the main app without touching it) instead of an in-page overlay -
+// styled to look like a native app-quit confirmation (e.g. Skype's).
+function showCloseConfirmWindow(){
+  if(closeConfirmWindow){ closeConfirmWindow.focus(); return; }
+  closeConfirmWindow = new BrowserWindow({
+    width: 440,
+    height: 238,
+    parent: mainWindow,
+    modal: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    show: false,
+    title: 'Quit Paradise?',
+    icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'close-confirm-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  closeConfirmWindow.setMenuBarVisibility(false);
+  closeConfirmWindow.loadFile(path.join(__dirname, 'renderer', 'close-confirm.html'));
+  closeConfirmWindow.once('ready-to-show', () => closeConfirmWindow.show());
+  // Closing it any other way (Alt+F4, the X button) is the same as Cancel - do nothing.
+  closeConfirmWindow.on('closed', () => { closeConfirmWindow = null; });
+}
 
 function createWindow(){
   mainWindow = new BrowserWindow({
@@ -62,9 +94,9 @@ function createWindow(){
     const behavior = getCloseBehavior();
     if(behavior === 'tray'){ event.preventDefault(); mainWindow.hide(); return; }
     if(behavior === 'quit'){ isQuitting = true; return; } // let the close proceed, app quits normally
-    // behavior === 'ask': hold the close and let the renderer show a confirm dialog
+    // behavior === 'ask': hold the close and show the standalone confirm window
     event.preventDefault();
-    mainWindow.webContents.send('confirm-close');
+    showCloseConfirmWindow();
   });
 
   // Open real links (e.g. attachment URLs, "learn more" links) in the OS browser, not inside the app.
@@ -382,9 +414,14 @@ ipcMain.handle('window-is-maximized', () => (mainWindow ? mainWindow.isMaximized
 
 // Response from the close-confirmation dialog shown in the renderer.
 ipcMain.on('close-response', (_event, { choice, remember }) => {
-  if(remember && (choice === 'quit' || choice === 'tray')) saveSettings({ closeBehavior: choice });
+  if(closeConfirmWindow){ closeConfirmWindow.close(); }
+  if(choice === 'cancel') return; // dismissed - main window stays exactly as it was
+  if(remember && (choice === 'quit' || choice === 'tray')){
+    saveSettings({ closeBehavior: choice });
+    if(mainWindow) mainWindow.webContents.send('close-behavior-changed', choice);
+  }
   if(choice === 'quit'){ isQuitting = true; app.quit(); }
-  else if(mainWindow){ mainWindow.hide(); }
+  else if(choice === 'tray' && mainWindow){ mainWindow.hide(); }
 });
 
 // Lets the Settings screen read/write the close-behavior preference directly.

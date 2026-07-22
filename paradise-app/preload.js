@@ -13,10 +13,9 @@ contextBridge.exposeInMainWorld('paradiseNative', {
   saveAuth: (data) => ipcRenderer.invoke('auth-save', data),
   loadAuth: () => ipcRenderer.invoke('auth-load'),
   clearAuth: () => ipcRenderer.invoke('auth-clear'),
-  onConfirmClose: (callback) => {
-    ipcRenderer.on('confirm-close', () => callback());
+  onCloseBehaviorChanged: (callback) => {
+    ipcRenderer.on('close-behavior-changed', (_event, value) => callback(value));
   },
-  respondClose: (choice, remember) => ipcRenderer.send('close-response', { choice, remember }),
   getCloseBehavior: () => ipcRenderer.invoke('close-behavior-get'),
   setCloseBehavior: (value) => ipcRenderer.invoke('close-behavior-set', value),
   getAppVersion: () => ipcRenderer.invoke('app-get-version'),
