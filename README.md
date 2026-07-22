@@ -19,3 +19,14 @@ Reference concept of what it looks like
 ---
 
 Uses [Spacebar](https://spacebar.chat/) by default. API can be changed in login page.
+
+
+# How to Install
+- Go to https://github.com/HexagonUBI/Paradise/releases
+- Go to newest version
+- Download Paradise-Setup-[version number].exe
+- Launch it
+- Go through steps in the setup wizard
+- You can find it in your start menu and (if you checked the setting in the wizard) it will launch automatically after installing.
+
+Please keep in mind that this is very raw Work In Progress project that requires patience and a lot of time! Any issues and bugs preferrably should be reported to https://github.com/HexagonUBI/Paradise/issues as detailed as possible - that will make everything much faster!
