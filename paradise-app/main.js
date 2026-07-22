@@ -152,6 +152,16 @@ ipcMain.on('tray-status', (_event, status) => setTrayStatus(status));
    installer window ever appears again, and there's no bundled updater library to go missing. */
 const UPDATE_REPO = 'HexagonUBI/Paradise';
 let pendingUpdate = null; // { version, asset } once a newer release is found
+const updateLogPath = () => path.join(app.getPath('temp'), 'paradise-update-log.txt');
+// console.log/error go nowhere for a normally-launched packaged app (no
+// attached console), so every diagnostic that matters gets written here too -
+// same file the PowerShell/shell helper scripts append their own steps to,
+// so the whole story ends up in one place regardless of which part ran.
+function logUpdate(msg){
+  const line = `${new Date().toISOString()} [main] ${msg}`;
+  console.log(line);
+  try { fs.appendFileSync(updateLogPath(), line + '\n'); } catch(err){ /* best effort */ }
+}
 
 // Simple major.minor.patch comparison; ignores 'v' prefixes and pre-release tags.
 function compareVersions(a, b){
@@ -169,7 +179,10 @@ function compareVersions(a, b){
 function pickAssetForPlatform(assets){
   const list = assets || [];
   const find = (pred) => list.find(pred);
-  const named = (needle, ext) => find(a => a.name.toLowerCase().includes(needle) && a.name.toLowerCase().endsWith(ext));
+  const named = (needle, ext) => find(a => {
+    const n = a.name.toLowerCase();
+    return n.includes(needle) && n.endsWith(ext) && !n.includes('setup');
+  });
   if(process.platform === 'win32') return named('-win-', '.zip');
   if(process.platform === 'darwin') return named('-mac-', '.zip');
   return find(a => a.name.toLowerCase().endsWith('.appimage'));
@@ -207,16 +220,17 @@ async function checkForUpdate(){
   try {
     const release = await httpsGetJson(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`);
     const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
-    console.log(`[updater] current=${app.getVersion()} latest=${latestVersion || '(none)'}`);
+    logUpdate(`checked GitHub: current=${app.getVersion()} latest=${latestVersion || '(none)'} release_assets=[${(release.assets || []).map(a => a.name).join(', ')}]`);
     if(!latestVersion || compareVersions(latestVersion, app.getVersion()) <= 0) return null;
     const asset = pickAssetForPlatform(release.assets);
     if(!asset){
-      console.warn(`[updater] release ${latestVersion} has no asset matching this platform (${process.platform}); assets:`, (release.assets || []).map(a => a.name));
+      logUpdate(`WARNING: release ${latestVersion} has no asset matching this platform (${process.platform}) - update will not be offered`);
       return null;
     }
+    logUpdate(`picked update asset: name="${asset.name}" url=${asset.browser_download_url}`);
     return { version: latestVersion, asset };
   } catch(err){
-    console.error('[updater] checkForUpdate failed:', err);
+    logUpdate(`ERROR checkForUpdate failed: ${err && (err.stack || err.message || err)}`);
     return null;
   }
 }
@@ -309,7 +323,9 @@ Remove-Item -Path "${zipPath}" -Force -ErrorAction SilentlyContinue
 Log "=== update script finished, copied=$copied ==="
 `.trim();
   fs.writeFileSync(scriptPath, ps1, 'utf8');
+  logUpdate(`applyUpdateWindows: wrote helper script to "${scriptPath}", log file is "${logPath}", spawning powershell.exe...`);
   const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath], { detached: true, stdio: 'ignore' });
+  logUpdate(`applyUpdateWindows: spawned helper, child pid=${child.pid}`);
   child.unref();
 }
 
@@ -364,7 +380,9 @@ rm -rf "${stagingDir}" "${zipPath}"
 log "=== update script finished, copied=$copied ==="
 `;
   fs.writeFileSync(scriptPath, sh, { mode: 0o755 });
+  logUpdate(`applyUpdateMac: wrote helper script to "${scriptPath}", spawning /bin/sh...`);
   const child = spawn('/bin/sh', [scriptPath], { detached: true, stdio: 'ignore' });
+  logUpdate(`applyUpdateMac: spawned helper, child pid=${child.pid}`);
   child.unref();
 }
 
@@ -373,19 +391,26 @@ ipcMain.handle('update-get-pending', () => (pendingUpdate ? { version: pendingUp
 ipcMain.on('update-start-download', async () => {
   if(!pendingUpdate || !mainWindow) return;
   const send = (channel, payload) => { if(mainWindow) mainWindow.webContents.send(channel, payload); };
+  logUpdate(`update-start-download clicked: target asset="${pendingUpdate.asset.name}"`);
   try {
     const filePath = await downloadAsset(pendingUpdate.asset, (pct) => send('update-download-progress', { percent: pct }));
+    const size = fs.existsSync(filePath) ? fs.statSync(filePath).size : -1;
+    logUpdate(`download complete: path="${filePath}" size=${size} bytes`);
     if(process.platform === 'win32'){
       send('update-downloaded');
+      logUpdate(`platform=win32: handing off to applyUpdateWindows, then quitting in 400ms (pid=${process.pid})`);
       applyUpdateWindows(filePath);
     } else if(process.platform === 'darwin'){
       send('update-downloaded');
+      logUpdate(`platform=darwin: handing off to applyUpdateMac, then quitting in 400ms (pid=${process.pid})`);
       applyUpdateMac(filePath);
     } else if(process.env.APPIMAGE){
       send('update-downloaded');
+      logUpdate(`platform=linux (AppImage): handing off to applyUpdateLinuxAppImage, then quitting in 400ms (pid=${process.pid})`);
       applyUpdateLinuxAppImage(filePath);
     } else {
       // deb build (or an unpackaged Linux run): not self-applicable, hand it off.
+      logUpdate('platform=linux (non-AppImage): not self-applicable, revealing file for manual install');
       shell.showItemInFolder(filePath);
       send('update-manual', { path: filePath });
       return;
@@ -393,7 +418,7 @@ ipcMain.on('update-start-download', async () => {
     isQuitting = true;
     setTimeout(() => app.quit(), 400);
   } catch(err){
-    console.error('update download/apply failed:', err);
+    logUpdate(`ERROR update download/apply failed: ${err && (err.stack || err.message || err)}`);
     send('update-error', { message: err.message });
   }
 });
