@@ -104,9 +104,9 @@
   .tab-indicator{width:100%;line-height:0;margin-bottom:4px;}
   .tab-indicator img{width:100%;height:auto;display:block;}
   .nav-tabs .filter{margin-left:auto;display:flex;align-items:center;gap:5px;font-weight:600;color:var(--text-dim);cursor:pointer;position:relative;}
-  .filter-menu{position:absolute;top:24px;right:16px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 20px rgba(20,40,60,.15);padding:6px;display:none;z-index:20;min-width:110px;}
+  .filter-menu{position:absolute;top:24px;right:16px;background:#fff;border:2px solid var(--sky);border-radius:0px;box-shadow:3px 3px 5px rgba(15,50,75,.25);padding:3px;display:none;z-index:20;min-width:110px;}
   .filter-menu.show{display:block;}
-  .filter-menu div{padding:7px 10px;font-size:13px;font-weight:500;color:var(--text);border-radius:6px;cursor:pointer;}
+  .filter-menu div{padding:7px 10px;font-size:13px;font-weight:500;color:var(--text);border-radius:0px;cursor:pointer;}
   .filter-menu div:hover{background:var(--sky-pale);}
   .filter-menu div.active{color:var(--sky);}
 
@@ -137,12 +137,12 @@
   .hdr-btn.ghost{background:#fff;border:1px solid var(--border);}
   .hdr-btn.ghost svg path{fill:var(--sky);}
 
-  .context-menu{position:absolute;top:40px;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 20px rgba(20,40,60,.15);padding:6px;display:none;z-index:30;min-width:190px;}
+  .context-menu{position:absolute;top:40px;right:0;background:#fff;border:2px solid var(--sky);border-radius:0px;box-shadow:3px 3px 5px rgba(15,50,75,.25);padding:3px;display:none;z-index:30;min-width:190px;}
   .context-menu.show{display:block;}
-  .context-menu div{padding:8px 12px;font-size:13.5px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--text);}
+  .context-menu div{padding:8px 12px;font-size:13.5px;font-weight:500;border-radius:0px;cursor:pointer;color:var(--text);}
   .context-menu div:hover{background:var(--sky-pale);}
   .context-menu div.danger{color:var(--danger);}
-  .context-menu div.danger:hover{background:#FBE3E3;}
+  .context-menu div.danger:hover{background:var(--danger);color:#FFF;}
   .context-menu hr{border:none;border-top:1px solid var(--border);margin:4px 2px;}
 
   .pinned{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 22px;font-size:13px;font-weight:600;color:var(--sky);border-bottom:1px solid var(--border);background:#FBFEFF;transition:opacity .2s, max-height .2s;overflow:hidden;}
