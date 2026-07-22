@@ -1,7 +1,7 @@
 {
   "name": "paradise",
-  "version": "0.1.5",
-  "description": "Paradise — a social platform bringing peace and quiet to communities, built on the Harmony/Spacebar protocol.",
+  "version": "0.1.12",
+  "description": "Paradise - a social platform bringing peace and quiet to communities, built on the Harmony/Spacebar protocol.",
   "main": "main.js",
   "author": "HexagonUBI",
   "license": "UNLICENSED",

@@ -53,7 +53,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "runAfterFinish": true,
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "installerIcon": "assets/installer_icon.ico",
+      "installerHeaderIcon": "assets/installer_icon.ico"
     },
     "mac": {
       "target": [

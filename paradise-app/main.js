@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, shell, safeStorage, Tray, nativeImage
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 
 let mainWindow = null;
 let closeConfirmWindow = null;
@@ -281,51 +281,89 @@ function applyUpdateWindows(zipPath){
   const installDir = path.dirname(process.execPath);
   const stagingDir = path.join(app.getPath('temp'), `paradise-update-${Date.now()}`);
   const scriptPath = path.join(app.getPath('temp'), `paradise-update-${Date.now()}.ps1`);
-  const logPath = path.join(app.getPath('temp'), 'paradise-update-log.txt');
-  // Retries the copy step for ~30s: right after quitting, some of Electron's
-  // helper processes (GPU process, crashpad handler) can hold onto a handle
-  // for a moment longer than the main process, so a single attempt can fail.
-  // Logs every step to logPath instead of swallowing errors, so a failure is
-  // actually diagnosable instead of just silently doing nothing.
-  const ps1 = `
-function Log($msg) { Add-Content -Path "${logPath}" -Value "$(Get-Date -Format o) $msg" }
-Log "=== update started, waiting for PID ${process.pid} to exit ==="
-try { Wait-Process -Id ${process.pid} -Timeout 30 -ErrorAction SilentlyContinue } catch {}
-Start-Sleep -Seconds 2
+  const logPath = updateLogPath();
 
-$copied = $false
-for($attempt = 1; $attempt -le 12; $attempt++){
+  // Sanity-check that PowerShell itself actually runs on this machine before
+  // relying on a detached, stdio-ignored invocation of it. The detached spawn
+  // below throws away all stdout/stderr (it has to, to survive past our own
+  // quit), so if PowerShell were blocked entirely (locked-down execution
+  // policy via Group Policy overriding -ExecutionPolicy Bypass, AppLocker,
+  // security software, etc.) we'd have zero visibility into that - this
+  // synchronous, non-detached test call can't hide anything.
   try {
-    if(-not (Test-Path "${stagingDir}")){
-      New-Item -ItemType Directory -Force -Path "${stagingDir}" | Out-Null
-      Expand-Archive -Path "${zipPath}" -DestinationPath "${stagingDir}" -Force
-      Log "Extracted update zip to staging"
-    }
-    Copy-Item -Path "${stagingDir}\\*" -Destination "${installDir}" -Recurse -Force -ErrorAction Stop
-    $copied = $true
-    Log "Copied new files into install dir on attempt $attempt"
-    break
-  } catch {
-    Log "Attempt $attempt failed: $($_.Exception.Message)"
-    Start-Sleep -Seconds 2
+    const smoke = execSync('powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Write-Output PS_SMOKE_TEST_OK"', { timeout: 8000 }).toString().trim();
+    logUpdate(`applyUpdateWindows: powershell smoke test output="${smoke}"`);
+  } catch(err){
+    logUpdate(`applyUpdateWindows: powershell smoke test FAILED - ${err && (err.stderr ? err.stderr.toString() : err.message)}`);
   }
-}
 
-if($copied){
-  Log "Launching updated Paradise.exe"
-  Start-Process -FilePath "${path.join(installDir, 'Paradise.exe')}"
-} else {
-  Log "FAILED: could not apply update after 12 attempts (see errors above)"
+  // Everything is wrapped in one big try/catch so a totally silent failure is
+  // structurally impossible - even an error in the very first line gets logged.
+  // The actual file copy uses robocopy (built into Windows) instead of a
+  // hand-rolled Copy-Item retry loop: it has its own battle-tested retry/wait
+  // logic for locked files (/R /W) and writes its own detailed log, which
+  // means we get real diagnostics even if something is wrong with our own
+  // Log() calls. It also auto-detects if the zip wrapped everything in a
+  // single nested folder instead of laying files flat at the archive root -
+  // copying that as a *subfolder* instead of overwriting installDir in place
+  // would "succeed" with no error while silently not updating anything,
+  // which is exactly the failure mode the previous version could hit blind.
+  const ps1 = `
+[System.IO.File]::AppendAllText("${logPath}", "$(Get-Date -Format o) [script] canary: process reached line 1$([Environment]::NewLine)")
+$logPath = "${logPath}"
+function Log($msg) {
+  try { Add-Content -LiteralPath $logPath -Value "$(Get-Date -Format o) $msg" -Encoding utf8 -ErrorAction Stop }
+  catch { try { [System.IO.File]::AppendAllText($logPath, "$(Get-Date -Format o) $msg\`r\`n") } catch {} }
 }
+try {
+  Log "=== update script started, waiting for PID ${process.pid} to exit ==="
+  try { Wait-Process -Id ${process.pid} -Timeout 30 -ErrorAction SilentlyContinue } catch {}
+  Start-Sleep -Seconds 2
+  Log "wait finished, extracting zip"
 
-Remove-Item -Path "${stagingDir}" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "${zipPath}" -Force -ErrorAction SilentlyContinue
-Log "=== update script finished, copied=$copied ==="
+  New-Item -ItemType Directory -Force -Path "${stagingDir}" | Out-Null
+  Expand-Archive -LiteralPath "${zipPath}" -DestinationPath "${stagingDir}" -Force
+  Log "extracted zip to staging dir"
+
+  $source = "${stagingDir}"
+  $topItems = @(Get-ChildItem -LiteralPath "${stagingDir}")
+  if($topItems.Count -eq 1 -and $topItems[0].PSIsContainer){
+    $source = $topItems[0].FullName
+    Log "zip contents were nested in a single folder ($source) - using that as the copy source"
+  } else {
+    Log "zip contents are flat at the archive root ($($topItems.Count) top-level items) - copying as-is"
+  }
+
+  Log "running robocopy: '$source' -> '${installDir}'"
+  robocopy "$source" "${installDir}" /E /R:20 /W:3 /NP /LOG+:"$logPath" | Out-Null
+  $rc = $LASTEXITCODE
+  Log "robocopy finished with exit code $rc (0-7 = success, 8+ = failure - see https://ss64.com/nt/robocopy-exit.html)"
+
+  if($rc -lt 8){
+    Log "copy succeeded - launching updated Paradise.exe"
+    Start-Process -FilePath "${path.join(installDir, 'Paradise.exe')}" -ArgumentList "--paradise-updated-from=${app.getVersion()}"
+  } else {
+    Log "FAILED: robocopy reported a failure (exit code $rc), NOT launching - old version is still in place"
+  }
+
+  Remove-Item -LiteralPath "${stagingDir}" -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath "${zipPath}" -Force -ErrorAction SilentlyContinue
+  Log "=== update script finished ==="
+} catch {
+  Log "FATAL SCRIPT ERROR: $($_.Exception.Message)"
+  Log $_.ScriptStackTrace
+}
 `.trim();
   fs.writeFileSync(scriptPath, ps1, 'utf8');
   logUpdate(`applyUpdateWindows: wrote helper script to "${scriptPath}", log file is "${logPath}", spawning powershell.exe...`);
-  const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath], { detached: true, stdio: 'ignore' });
-  logUpdate(`applyUpdateWindows: spawned helper, child pid=${child.pid}`);
+  // Spawning powershell.exe directly isn't enough to survive our own quit()
+  // on Windows: Electron/Chromium assigns its whole process tree to a Windows
+  // Job Object for cleanup, and a directly-spawned child can get taken down
+  // with it even with detached+unref. Routing through `cmd /c start` breaks
+  // the new process out of that job - this is the standard, documented fix.
+  const startCmd = `start "" /min powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`;
+  const child = spawn(startCmd, { shell: true, detached: true, stdio: 'ignore', windowsHide: true });
+  logUpdate(`applyUpdateWindows: spawned helper via cmd/start (pid=${child.pid} is the cmd.exe wrapper, not powershell itself)`);
   child.unref();
 }
 
@@ -416,7 +454,7 @@ ipcMain.on('update-start-download', async () => {
       return;
     }
     isQuitting = true;
-    setTimeout(() => app.quit(), 400);
+    setTimeout(() => app.quit(), 700);
   } catch(err){
     logUpdate(`ERROR update download/apply failed: ${err && (err.stack || err.message || err)}`);
     send('update-error', { message: err.message });
@@ -489,6 +527,8 @@ ipcMain.handle('auth-clear', () => {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null); // Discord-style: no native menu bar, the app draws its own chrome
+  const updatedFromArg = process.argv.find(a => a.startsWith('--paradise-updated-from='));
+  if(updatedFromArg) logUpdate(`app started WITH update-relaunch marker (${updatedFromArg}) - confirms the update script's Start-Process launched this instance`);
   createWindow();
   createTray();
   runUpdateCheck();

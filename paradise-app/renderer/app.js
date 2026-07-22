@@ -1300,6 +1300,75 @@ document.getElementById('settings-link-status').addEventListener('click', notCon
   });
 })();
 
+/* ---------------- patch notes (pulled live from GitHub Releases) ----------------
+   Deliberately not a separate CHANGELOG file to hand-maintain - whatever gets
+   written in a release's notes on GitHub is what shows up here, so there's
+   exactly one place to keep up to date instead of two. */
+const patchNotesModal = document.getElementById('patch-notes-modal');
+const patchNotesList = document.getElementById('patch-notes-list');
+let patchNotesLoaded = false;
+
+function renderMarkdownLite(md){
+  if(!md) return '';
+  let html = escapeHtml(md).replace(/\r\n/g, '\n');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+  const out = [];
+  let inList = false;
+  for(const line of html.split('\n')){
+    const bullet = line.match(/^[-*]\s+(.*)$/);
+    if(bullet){
+      if(!inList){ out.push('<ul>'); inList = true; }
+      out.push(`<li>${bullet[1]}</li>`);
+      continue;
+    }
+    if(inList){ out.push('</ul>'); inList = false; }
+    if(!line.trim()) continue;
+    out.push(/^<h[1-3]>/.test(line) ? line : `<p>${line}</p>`);
+  }
+  if(inList) out.push('</ul>');
+  return out.join('');
+}
+
+async function loadPatchNotes(){
+  if(patchNotesLoaded) return;
+  try {
+    const res = await fetch('https://api.github.com/repos/HexagonUBI/Paradise/releases', {
+      headers: { 'Accept': 'application/vnd.github+json' },
+    });
+    if(!res.ok) throw new Error(`GitHub responded ${res.status}`);
+    const releases = await res.json();
+    if(!Array.isArray(releases) || !releases.length){
+      patchNotesList.innerHTML = '<div class="empty-state small">No patch notes published yet.</div>';
+      return;
+    }
+    patchNotesList.innerHTML = releases.slice(0, 15).map(rel => {
+      const version = escapeHtml(rel.name || rel.tag_name || 'Unknown version');
+      const date = rel.published_at ? new Date(rel.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+      const body = rel.body ? renderMarkdownLite(rel.body) : '<p><em>No description provided.</em></p>';
+      return `<div class="patch-note-entry">
+        <div class="patch-note-version">${version}</div>
+        <div class="patch-note-date">${escapeHtml(date)}</div>
+        <div class="patch-note-content">${body}</div>
+      </div>`;
+    }).join('');
+    patchNotesLoaded = true;
+  } catch(err){
+    patchNotesList.innerHTML = `<div class="empty-state small">Couldn\u2019t load patch notes: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('settings-patch-notes-btn').addEventListener('click', () => {
+  patchNotesModal.classList.add('show');
+  loadPatchNotes();
+});
+document.getElementById('patch-notes-close').addEventListener('click', () => patchNotesModal.classList.remove('show'));
+patchNotesModal.addEventListener('click', (e) => { if(e.target === patchNotesModal) patchNotesModal.classList.remove('show'); });
+
 /* ---------------- profile overview modal ---------------- */
 const overviewModal = document.getElementById('profile-overview-modal');
 function openProfileOverview(user, statusOverride, subOverride){

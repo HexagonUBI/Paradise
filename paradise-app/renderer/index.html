@@ -412,9 +412,12 @@
           <button class="settings-nav-item active" data-panel="help">Help &amp; Feedback</button>
         </nav>
         <div class="settings-sidebar-footer">
-          <button class="settings-social" id="settings-social-trello" title="Paradise Roadmap (Trello)"></button>
-          <button class="settings-social" id="settings-social-discord" title="Discord"></button>
-          <button class="settings-social" id="settings-social-github" title="GitHub"></button>
+          <div class="settings-social-row">
+            <button class="settings-social" id="settings-social-trello" title="Paradise Roadmap (Trello)"></button>
+            <button class="settings-social" id="settings-social-discord" title="Discord"></button>
+            <button class="settings-social" id="settings-social-github" title="GitHub"></button>
+          </div>
+          <button class="settings-patch-notes-link" id="settings-patch-notes-btn">Patch Notes</button>
         </div>
       </div>
 
@@ -508,6 +511,21 @@
           <button class="settings-link-row" id="settings-link-report">Report a problem</button>
           <button class="settings-link-row" id="settings-link-suggest">Suggest a feature</button>
           <button class="settings-link-row" id="settings-link-roadmap">Paradise Roadmap</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATCH NOTES MODAL -->
+  <div class="modal-backdrop" id="patch-notes-modal">
+    <div class="settings-card patch-notes-card">
+      <button class="settings-close-x" id="patch-notes-close" title="Close">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 2l14 14M16 2L2 16" stroke="#1B2733" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+      <div class="patch-notes-body">
+        <h2>Patch Notes</h2>
+        <div id="patch-notes-list" class="patch-notes-list">
+          <div class="empty-state small">Loading patch notes&hellip;</div>
         </div>
       </div>
     </div>
