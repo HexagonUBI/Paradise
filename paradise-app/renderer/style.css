@@ -45,7 +45,7 @@
   .titlebar .win-btn:hover{background:rgba(0,0,0,.06);}
   .titlebar .win-btn.close:hover{background:#E81123;color:#fff;}
   .titlebar .win-btn.close:active{background:#F1707A;}
-  .titlebar .win-btn.update-btn{width:26px;height:26px;border-radius:50%;background:var(--sky);color:#fff;margin:0 6px;display:flex;}
+  .titlebar .win-btn.update-btn{width:26px;height:26px;border-radius:50%;background:var(--sky);color:#fff;align-self:center;justify-content:center;margin:0px 6px;display:flex;}
   .titlebar .win-btn.update-btn:hover{background:#0E9BD6;}
   .titlebar .win-btn.update-btn.hidden{display:none;}
 
