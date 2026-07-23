@@ -54,7 +54,7 @@
 
   /* ---------- rail ---------- */
   .rail{background:var(--sky-pale);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:12px;overflow-y:auto;}
-  .rail-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--sky);transition:border-radius .30s, transform .30s cubic-bezier(1, 0, 0, 1);padding:0;position:relative;flex-shrink:0;color:#fff;font-weight:700;font-size:15px;overflow:hidden;}
+  .rail-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--sky);transition:border-radius 0.3s cubic-bezier(0, 1, 0, 1);padding:0;position:relative;flex-shrink:0;color:#fff;font-weight:700;font-size:15px;overflow:hidden;}
   .rail-btn img{width:100%;height:100%;object-fit:cover;border-radius:inherit;}
   .rail-btn.square{border-radius:100%;margin-bottom:3px;}
   .rail-btn.square:hover{border-radius:15px;}
