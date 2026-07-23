@@ -897,6 +897,8 @@ function actionsHtml(){
 
 const ICON_EDIT = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M2 18l.7-3.9L13.6 3.2a1 1 0 011.4 0l1.8 1.8a1 1 0 010 1.4L6.9 17.3 2 18z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const ICON_DELETE = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3a1 1 0 011-1h2a1 1 0 011 1v2m-8 0 1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_PLAY = '<svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="rgba(20,30,40,.45)"/><path d="M18 14.5l13 7.5-13 7.5v-15z" fill="#fff"/></svg>';
+const ICON_STICKER = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="7.3" cy="7.3" r="1.2" fill="currentColor"/><path d="M4 14l3-3 3 3 3-4 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function appendMessageEl(m, scroll){
   const el = document.getElementById('messages');
@@ -908,23 +910,20 @@ function appendMessageEl(m, scroll){
   row.dataset.channelId = m.channel_id || state.activeChannelId;
   const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
 
-  const bubbleContent = m.attachments && m.attachments.length
-    ? m.attachments.map(a => attachmentHtml(a)).join('') + (m.content ? `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '')
-    : `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content || '')}${editedTag(m)}</div>`;
+  const bodyHtml = renderMessageBody(m);
 
   if(mine){
-    row.innerHTML = `<span class="msg-time">${time}</span>${bubbleContent}${actionsHtml()}`;
+    row.innerHTML = `<span class="msg-time">${time}</span><div class="msg-bubble-stack">${bodyHtml}</div>${actionsHtml()}`;
   } else {
     const meta = state.channelMeta[state.activeChannelId] || {};
     const author = m.author || {};
-    row.innerHTML = `<div class="theirs-wrap">
-      <div class="avatar" id="msg-av-${m.id}"><span class="fallback-init"></span></div>
-      <div style="display:flex;flex-direction:column;">
-        ${meta.isGroup ? `<span class="msg-author">${escapeHtml(author.username || '')}</span>` : ''}
-        <span class="msg-time">${time}</span>
-        ${bubbleContent}
-      </div>
-    </div>`;
+    row.innerHTML = `
+      ${meta.isGroup ? `<span class="msg-author">${escapeHtml(author.username || '')}</span>` : ''}
+      <span class="msg-time">${time}</span>
+      <div class="theirs-wrap">
+        <div class="avatar" id="msg-av-${m.id}"><span class="fallback-init"></span></div>
+        <div class="msg-bubble-stack">${bodyHtml}</div>
+      </div>`;
   }
   el.appendChild(row);
   if(!mine){
@@ -963,6 +962,8 @@ function startEditMessage(row){
   if(!bubble || row.querySelector('.edit-box')) return;
 
   const original = msg ? (msg.content || '') : bubble.textContent;
+  const combo = bubble.closest('.attach-combo');
+  if(combo) combo.classList.add('editing');
   bubble.style.display = 'none';
   const box = document.createElement('div');
   box.className = 'edit-box';
@@ -976,7 +977,7 @@ function startEditMessage(row){
   textarea.style.height = textarea.scrollHeight + 'px';
   textarea.addEventListener('input', () => { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; });
 
-  const cancel = () => { box.remove(); bubble.style.display = ''; };
+  const cancel = () => { box.remove(); bubble.style.display = ''; if(combo) combo.classList.remove('editing'); };
   const save = async () => {
     const newContent = textarea.value.trim();
     if(!newContent){ cancel(); return; }
@@ -1016,6 +1017,14 @@ async function deleteMessageRow(row){
 }
 
 document.getElementById('messages').addEventListener('click', (e) => {
+  const item = e.target.closest('.media-item');
+  const video = item && item.querySelector('video');
+  if(!video) return;
+  if(video.paused){ video.controls = true; video.play(); item.classList.add('playing'); }
+  else { video.pause(); item.classList.remove('playing'); }
+});
+
+document.getElementById('messages').addEventListener('click', (e) => {
   const btn = e.target.closest('.msg-action-btn');
   if(!btn) return;
   const row = e.target.closest('.msg-row');
@@ -1044,12 +1053,63 @@ client.addEventListener('message-delete', (e) => {
   if(d.channel_id === state.activeChannelId) removeMessageEl(d.id);
 });
 
-function attachmentHtml(a){
-  const isImage = a.content_type && a.content_type.startsWith('image/');
-  if(isImage){
-    return `<div class="attach-bubble"><img src="${a.url || a.proxy_url}" alt=""><div class="attach-meta"><div class="fname">${escapeHtml(a.filename||'')}</div><div class="fsize">${Math.round((a.size||0)/1024)} KB</div></div></div>`;
+function attachmentKind(a){
+  const ct = (a.content_type || '').toLowerCase();
+  if(ct.startsWith('image/')) return 'image';
+  if(ct.startsWith('video/')) return 'video';
+  const ext = (a.filename || '').split('.').pop().toLowerCase();
+  if(['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'image';
+  if(['mp4','webm','mov','mkv','avi'].includes(ext)) return 'video';
+  return 'file';
+}
+
+function mediaItemHtml(a){
+  const url = a.url || a.proxy_url;
+  const kind = attachmentKind(a);
+  if(kind === 'video'){
+    return `<div class="media-item kind-video"><video src="${url}" preload="metadata" muted playsinline></video><div class="video-play-overlay">${ICON_PLAY}</div></div>`;
   }
+  return `<div class="media-item kind-image"><img src="${url}" alt="${escapeHtml(a.filename||'')}"></div>`;
+}
+
+function attachmentHtml(a){
   return `<div class="attach-bubble"><img src="../assets/chats/template_attachment.png" alt=""><div class="attach-meta"><div class="fname"><a href="${a.url||'#'}" target="_blank" rel="noopener">${escapeHtml(a.filename||'file')}</a></div><div class="fsize">${Math.round((a.size||0)/1024)} KB</div></div></div>`;
+}
+
+function stickerHtml(s){
+  const name = escapeHtml(s.name || 'sticker');
+  const url = client.cdnStickerUrl(s.id, s.format_type);
+  const fallback = `<div class="sticker-fallback" title="${name}">${ICON_STICKER}<span>${name}</span></div>`;
+  if(!url) return `<div class="sticker-frame broken">${fallback}</div>`;
+  return `<div class="sticker-frame"><img src="${url}" alt="${name}" onerror="this.style.display='none';this.parentElement.classList.add('broken')">${fallback}</div>`;
+}
+
+function renderMessageBody(m){
+  // Defensive: stickers aren't wired up on the backend side yet, but render them
+  // properly (per DesignRules) the moment a message ever carries sticker_items.
+  if(m.sticker_items && m.sticker_items.length){
+    return m.sticker_items.map(s => stickerHtml(s)).join('');
+  }
+
+  const atts = m.attachments || [];
+  const media = atts.filter(a => attachmentKind(a) !== 'file');
+  const files = atts.filter(a => attachmentKind(a) === 'file');
+
+  let html = '';
+  if(media.length){
+    const rowHtml = media.map(a => mediaItemHtml(a)).join('');
+    const gridClass = media.length === 1 ? 'grid-1' : media.length <= 4 ? 'grid-2' : 'grid-3';
+    const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '';
+    html += `<div class="attach-combo"><div class="media-row ${gridClass}">${rowHtml}</div>${caption}</div>`;
+  }
+  if(files.length){
+    html += files.map(a => attachmentHtml(a)).join('');
+    if(!media.length && m.content) html += `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>`;
+  }
+  if(!media.length && !files.length){
+    html += `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content || '')}${editedTag(m)}</div>`;
+  }
+  return html;
 }
 
 /* ---------------- back / forward ---------------- */

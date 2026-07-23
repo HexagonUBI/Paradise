@@ -216,6 +216,16 @@ class HarmonyClient extends EventTarget {
     return `${base}/icons/${guildId}/${iconHash}.${ext}`;
   }
 
+  // format_type: 1 = PNG, 2 = APNG, 3 = LOTTIE (vector, not a plain image), 4 = GIF
+  cdnStickerUrl(stickerId, formatType){
+    if(!stickerId) return null;
+    const base = this._resolveCdnBase();
+    if(!base) return null;
+    if(formatType === 3) return null; // Lottie stickers aren't renderable as a plain <img>
+    const ext = formatType === 4 ? 'gif' : 'png';
+    return `${base}/stickers/${stickerId}.${ext}`;
+  }
+
   /* ---------------- Gateway ---------------- */
   connectGateway(){
     if(!this.gatewayUrl) throw new HarmonyError('No gateway URL known for this instance.');
