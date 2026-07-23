@@ -156,7 +156,7 @@
   .msg-row.theirs{align-self:flex-start;align-items:flex-start;}
   .msg-time{font-size:10.5px;color:var(--text-dim);margin-bottom:3px;}
   .msg-author{font-size:11.5px;color:var(--text-dim);font-weight:700;margin-bottom:2px;}
-  .bubble{position:relative;padding:10px 14px;border-radius:5px;font-size:14px;line-height:1.4;word-break:break-word;}
+  .bubble{position:relative;padding:10px 14px;border-radius:5px;font-size:14px;line-height:1.4;word-break:break-word;width:fit-content;max-width:100%;}
   .edited-tag{font-size:10.5px;color:var(--text-dim);margin-left:6px;font-weight:500;}
   .msg-row.mine{position:relative;}
   .msg-actions{position:absolute;top:-14px;right:0;display:none;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px;box-shadow:0 2px 8px rgba(15,50,75,0);}
@@ -172,19 +172,44 @@
   .msg-row.theirs .bubble{background:var(--bubble-them);}
 
   /* ---------- speech-bubble tail (see reference_messagebubbles_rules.png) ---------- */
+  /* Flat-color tail: used for plain text bubbles, file attachments, and any attachment
+     bubble that doesn't have its own image to pull the tail from (multi-image grids, video). */
   .msg-row.theirs .bubble::before,
-  .msg-row.theirs .attach-combo::before,
+  .msg-row.theirs .attach-combo:not(.tail-image)::before,
   .msg-row.theirs .attach-bubble::before{
     content:"";position:absolute;left:-4px;top:14px;width:0;height:0;
     border-top:7px solid transparent;border-bottom:7px solid transparent;
     border-right:7px solid var(--bubble-them);
   }
   .msg-row.mine .bubble::after,
-  .msg-row.mine .attach-combo::after,
+  .msg-row.mine .attach-combo:not(.tail-image)::after,
   .msg-row.mine .attach-bubble::after{
     content:"";position:absolute;right:-6px;top:14px;width:0;height:0;
     border-top:7px solid transparent;border-bottom:7px solid transparent;
     border-left:7px solid var(--bubble-me);
+  }
+
+  /* A bubble that trails an attachment above it (split caption, see media-caption-split
+     below) shouldn't grow its own tail -- the attachment bubble already has one. */
+  .bubble.no-tail::before,
+  .bubble.no-tail::after{content:none;}
+
+  /* ---------- image-masked tail (single image attachment): the tail is a sliver of the
+     actual photo instead of a flat color, so it reads as part of the picture rather than
+     a floating triangle. See reference_messagebubbles_rules.png "Attachment Bubble". ---------- */
+  .attach-combo.tail-image{overflow:visible;}
+  .media-tail{
+    position:absolute;top:14px;width:9px;height:22px;
+    background-repeat:no-repeat;background-size:cover;
+    pointer-events:none;
+  }
+  .msg-row.theirs .attach-combo.tail-image .media-tail{
+    left:-8px;background-position:left center;
+    clip-path:polygon(100% 6%, 100% 94%, 0% 50%);
+  }
+  .msg-row.mine .attach-combo.tail-image .media-tail{
+    right:-8px;background-position:right center;
+    clip-path:polygon(0% 6%, 0% 94%, 100% 50%);
   }
   .theirs-wrap{display:flex;gap:8px;align-items:flex-start;}
   .theirs-wrap .avatar{width:38px;height:38px;font-size:14px;border-radius:50%;flex-shrink:0;overflow:hidden;}

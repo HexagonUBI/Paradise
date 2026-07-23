@@ -729,6 +729,15 @@ function escapeHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+const CAPTION_FONT = '14px "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif';
+let _measureCanvas = null;
+function measureTextWidth(text, font){
+  if(!_measureCanvas) _measureCanvas = document.createElement('canvas');
+  const ctx = _measureCanvas.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
 async function selectChannel(channelId, info, pushHistory){
   hideHomePanel();
   state.activeChannelId = channelId;
@@ -1072,6 +1081,11 @@ function mediaItemHtml(a){
   return `<div class="media-item kind-image"><img src="${url}" alt="${escapeHtml(a.filename||'')}"></div>`;
 }
 
+function mediaTailHtml(a){
+  const url = a.url || a.proxy_url;
+  return `<div class="media-tail" style="background-image:url('${escapeHtml(url)}')"></div>`;
+}
+
 function attachmentHtml(a){
   return `<div class="attach-bubble"><img src="../assets/chats/template_attachment.png" alt=""><div class="attach-meta"><div class="fname"><a href="${a.url||'#'}" target="_blank" rel="noopener">${escapeHtml(a.filename||'file')}</a></div><div class="fsize">${Math.round((a.size||0)/1024)} KB</div></div></div>`;
 }
@@ -1099,8 +1113,26 @@ function renderMessageBody(m){
   if(media.length){
     const rowHtml = media.map(a => mediaItemHtml(a)).join('');
     const gridClass = media.length === 1 ? 'grid-1' : media.length <= 4 ? 'grid-2' : 'grid-3';
-    const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '';
-    html += `<div class="attach-combo"><div class="media-row ${gridClass}">${rowHtml}</div>${caption}</div>`;
+    const squareWidth = gridClass === 'grid-1' ? 220 : gridClass === 'grid-2' ? 140 : 90;
+
+    // Single image attachments pull their tail from the actual photo (see DesignRules /
+    // reference_messagebubbles_rules.png) instead of a flat-color triangle.
+    const singleImage = media.length === 1 && attachmentKind(media[0]) === 'image';
+    const comboClass = singleImage ? 'attach-combo tail-image' : 'attach-combo';
+    const tailHtml = singleImage ? mediaTailHtml(media[0]) : '';
+
+    // If there's a caption on a single attachment and it's wider than the attachment's
+    // own square, split it into its own gapped bubble instead of stretching the combo.
+    const captionOverflows = media.length === 1 && m.content &&
+      (measureTextWidth(m.content, CAPTION_FONT) + 24) > squareWidth;
+
+    if(captionOverflows){
+      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${tailHtml}</div>`;
+      html += `<div class="bubble no-tail" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>`;
+    } else {
+      const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '';
+      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${tailHtml}${caption}</div>`;
+    }
   }
   if(files.length){
     html += files.map(a => attachmentHtml(a)).join('');
