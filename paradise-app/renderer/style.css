@@ -76,8 +76,8 @@
   .me-card{position:relative;background:#F0FAFC;border-bottom:1px solid #E7F1F3;padding:0 16px 12px;overflow:hidden;}
   .me-card-banner{height:44px;margin:0 -16px 0;overflow:hidden;position:relative;}
   .me-card-banner img{position:absolute;top:0;left:0;width:100%;height:auto;display:block;}
-  .me-card-row{display:flex;align-items:center;gap:12px;padding-left:76px;min-height:64px;margin-top:-36px;cursor:pointer;}
-  .me-card .avatar{position:absolute;left:16px;top:8px;width:64px;height:64px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;z-index:1;}
+  .me-card-row{display:flex;align-items:center;gap:12px;padding-left:55px;min-height:64px;margin-top:-29px;cursor:pointer;}
+  .me-card .avatar{position:absolute;left:12.5px;top:20px;width:51.5px;height:51.5px;font-size:20px;border:3px solid #F0FAFC;background:#CFE3EC;z-index:1;}
   .me-card .status-badge{background:#F0FAFC;}
   .me-info{padding-bottom:4px;min-width:0;}
   .me-info .name{font-weight:700;font-size:16px;line-height:1.25;color:var(--text);}
