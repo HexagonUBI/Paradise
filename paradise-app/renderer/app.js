@@ -16,7 +16,7 @@ const state = {
   messageLoadingMore: {},    // channelId -> boolean, guards against overlapping pagination fetches
   presence: {},              // userId -> status string
   relationships: [],         // friends / pending requests, from fetchRelationships()
-  homeTab: 'online',         // 'online' | 'all' | 'pending' — which list the home page shows
+  homeTab: 'online',         // 'online' | 'all' | 'pending' - which list the home page shows
   history: [],
   historyIndex: -1,
   settings: { typing: true, notif: true },
@@ -1382,14 +1382,14 @@ document.getElementById('settings-link-status').addEventListener('click', notCon
   window.paradiseNative.onUpdateManual((info) => {
     settingsBtn.disabled = false;
     titlebarBtn.disabled = false;
-    titlebarBtn.title = 'Update available — click to download';
+    titlebarBtn.title = 'Update available - click to download';
     showToast('Downloaded \u2014 opened the file so you can install it (this build type can\u2019t update itself automatically).');
     void info;
   });
   window.paradiseNative.onUpdateError((info) => {
     settingsBtn.disabled = false;
     titlebarBtn.disabled = false;
-    titlebarBtn.title = 'Update available — click to download';
+    titlebarBtn.title = 'Update available - click to download';
     showToast((info && info.message) ? `Update failed: ${info.message}` : 'Update failed \u2014 try again later.');
   });
 })();
