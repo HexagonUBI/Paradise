@@ -86,7 +86,7 @@
   .me-card .round-btn.ghost{margin-left:auto;background:none;width:28px;height:28px;flex-shrink:0;}
   .me-card .round-btn.ghost:hover{background:var(--sky-pale);}
 
-  .icon-row{display:flex;gap:8px;justify-content:flex-end;padding:12px 0 0;}
+  .icon-row{display:flex;gap:8px;justify-content:flex-end;padding:1px 0 0;}
   .round-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;background:var(--sky);display:flex;align-items:center;justify-content:center;transition:background .15s;}
   .round-btn.toggled-off{background:var(--danger);}
   .round-btn:hover{background:#0E9BD6;}
