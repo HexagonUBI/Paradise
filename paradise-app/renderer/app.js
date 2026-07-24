@@ -908,6 +908,10 @@ const ICON_EDIT = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none"><
 const ICON_DELETE = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3a1 1 0 011-1h2a1 1 0 011 1v2m-8 0 1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ICON_PLAY = '<svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="rgba(20,30,40,.45)"/><path d="M18 14.5l13 7.5-13 7.5v-15z" fill="#fff"/></svg>';
 const ICON_STICKER = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="7.3" cy="7.3" r="1.2" fill="currentColor"/><path d="M4 14l3-3 3 3 3-4 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_CLOSE = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const ICON_ZOOM_IN = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M9 6.3v5.4M6.3 9h5.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const ICON_ZOOM_OUT = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M6.3 9h5.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 14l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+const ICON_ZOOM_RESET = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M16 4v5h-5M4 16v-5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.6 12a6.5 6.5 0 0011 3.4M15.4 8a6.5 6.5 0 00-11-3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 
 function appendMessageEl(m, scroll){
   const el = document.getElementById('messages');
@@ -1034,6 +1038,13 @@ document.getElementById('messages').addEventListener('click', (e) => {
 });
 
 document.getElementById('messages').addEventListener('click', (e) => {
+  const item = e.target.closest('.media-item.kind-image');
+  if(!item) return;
+  const img = item.querySelector('img');
+  if(img && img.src) openLightbox(img.src);
+});
+
+document.getElementById('messages').addEventListener('click', (e) => {
   const btn = e.target.closest('.msg-action-btn');
   if(!btn) return;
   const row = e.target.closest('.msg-row');
@@ -1041,6 +1052,107 @@ document.getElementById('messages').addEventListener('click', (e) => {
   if(btn.dataset.action === 'edit') startEditMessage(row);
   if(btn.dataset.action === 'delete') deleteMessageRow(row);
 });
+
+/* ---------------- image lightbox: click an attachment to open it fullscreen with zoom/pan ---------------- */
+let _lightboxState = { scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0 };
+const LIGHTBOX_MIN = 1, LIGHTBOX_MAX = 6;
+
+function buildLightbox(){
+  if(document.getElementById('lightbox-overlay')) return document.getElementById('lightbox-overlay');
+  const overlay = document.createElement('div');
+  overlay.id = 'lightbox-overlay';
+  overlay.className = 'lightbox-overlay';
+  overlay.innerHTML = `
+    <button class="lightbox-btn lightbox-close" type="button" title="Close" data-action="close">${ICON_CLOSE}</button>
+    <div class="lightbox-stage" data-role="stage">
+      <img class="lightbox-img" data-role="img" alt="">
+    </div>
+    <div class="lightbox-controls">
+      <button class="lightbox-btn" type="button" title="Zoom out" data-action="zoom-out">${ICON_ZOOM_OUT}</button>
+      <span class="lightbox-zoom-level" data-role="zoom-level">100%</span>
+      <button class="lightbox-btn" type="button" title="Zoom in" data-action="zoom-in">${ICON_ZOOM_IN}</button>
+      <button class="lightbox-btn" type="button" title="Reset" data-action="reset">${ICON_ZOOM_RESET}</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const img = overlay.querySelector('[data-role="img"]');
+  const stage = overlay.querySelector('[data-role="stage"]');
+  const zoomLevelEl = overlay.querySelector('[data-role="zoom-level"]');
+
+  function applyTransform(withTransition){
+    img.style.transition = withTransition ? 'transform .12s ease' : 'none';
+    img.style.transform = `translate(${_lightboxState.x}px, ${_lightboxState.y}px) scale(${_lightboxState.scale})`;
+    img.style.cursor = _lightboxState.scale > 1 ? (_lightboxState.dragging ? 'grabbing' : 'grab') : 'zoom-in';
+    zoomLevelEl.textContent = Math.round(_lightboxState.scale * 100) + '%';
+  }
+
+  function setScale(next){
+    next = Math.min(LIGHTBOX_MAX, Math.max(LIGHTBOX_MIN, next));
+    _lightboxState.scale = next;
+    if(next === LIGHTBOX_MIN){ _lightboxState.x = 0; _lightboxState.y = 0; }
+    applyTransform(true);
+  }
+
+  overlay.querySelector('[data-action="close"]').addEventListener('click', closeLightbox);
+  overlay.querySelector('[data-action="zoom-in"]').addEventListener('click', () => setScale(_lightboxState.scale + 0.5));
+  overlay.querySelector('[data-action="zoom-out"]').addEventListener('click', () => setScale(_lightboxState.scale - 0.5));
+  overlay.querySelector('[data-action="reset"]').addEventListener('click', () => setScale(1));
+
+  stage.addEventListener('click', (e) => { if(e.target === stage) closeLightbox(); });
+
+  img.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setScale(_lightboxState.scale + (e.deltaY < 0 ? 0.3 : -0.3));
+  }, { passive: false });
+
+  img.addEventListener('dblclick', () => setScale(_lightboxState.scale > 1 ? 1 : 2.5));
+
+  img.addEventListener('mousedown', (e) => {
+    if(_lightboxState.scale <= 1) return;
+    _lightboxState.dragging = true;
+    _lightboxState.lastX = e.clientX;
+    _lightboxState.lastY = e.clientY;
+    applyTransform(false);
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if(!_lightboxState.dragging) return;
+    _lightboxState.x += e.clientX - _lightboxState.lastX;
+    _lightboxState.y += e.clientY - _lightboxState.lastY;
+    _lightboxState.lastX = e.clientX;
+    _lightboxState.lastY = e.clientY;
+    applyTransform(false);
+  });
+  window.addEventListener('mouseup', () => {
+    if(!_lightboxState.dragging) return;
+    _lightboxState.dragging = false;
+    applyTransform(false);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(!overlay.classList.contains('show')) return;
+    if(e.key === 'Escape') closeLightbox();
+    else if(e.key === '+' || e.key === '=') setScale(_lightboxState.scale + 0.5);
+    else if(e.key === '-') setScale(_lightboxState.scale - 0.5);
+  });
+
+  overlay._img = img;
+  overlay._applyTransform = applyTransform;
+  return overlay;
+}
+
+function openLightbox(src){
+  const overlay = buildLightbox();
+  _lightboxState = { scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0 };
+  overlay._img.src = src;
+  overlay._applyTransform(false);
+  overlay.classList.add('show');
+}
+
+function closeLightbox(){
+  const overlay = document.getElementById('lightbox-overlay');
+  if(overlay) overlay.classList.remove('show');
+}
 
 client.addEventListener('message-update', (e) => {
   const m = e.detail;
@@ -1072,18 +1184,20 @@ function attachmentKind(a){
   return 'file';
 }
 
-function mediaItemHtml(a){
+function mediaItemHtml(a, opts){
   const url = a.url || a.proxy_url;
   const kind = attachmentKind(a);
   if(kind === 'video'){
     return `<div class="media-item kind-video"><video src="${url}" preload="metadata" muted playsinline></video><div class="video-play-overlay">${ICON_PLAY}</div></div>`;
   }
-  return `<div class="media-item kind-image"><img src="${url}" alt="${escapeHtml(a.filename||'')}"></div>`;
-}
-
-function mediaTailHtml(a){
-  const url = a.url || a.proxy_url;
-  return `<div class="media-tail" style="background-image:url('${escapeHtml(url)}')"></div>`;
+  const tail = opts && opts.tail;
+  const inner = `<img src="${url}" alt="${escapeHtml(a.filename||'')}">`;
+  if(tail){
+    // Rendered inside a widened, clip-path'd wrapper (see .tail-host in style.css) so the
+    // tail is carved out of this same image element instead of a separately-sampled sliver.
+    return `<div class="media-item kind-image"><div class="tail-host">${inner}</div></div>`;
+  }
+  return `<div class="media-item kind-image">${inner}</div>`;
 }
 
 function attachmentHtml(a){
@@ -1111,27 +1225,31 @@ function renderMessageBody(m){
 
   let html = '';
   if(media.length){
-    const rowHtml = media.map(a => mediaItemHtml(a)).join('');
     const gridClass = media.length === 1 ? 'grid-1' : media.length <= 4 ? 'grid-2' : 'grid-3';
     const squareWidth = gridClass === 'grid-1' ? 220 : gridClass === 'grid-2' ? 140 : 90;
 
     // Single image attachments pull their tail from the actual photo (see DesignRules /
     // reference_messagebubbles_rules.png) instead of a flat-color triangle.
     const singleImage = media.length === 1 && attachmentKind(media[0]) === 'image';
-    const comboClass = singleImage ? 'attach-combo tail-image' : 'attach-combo';
-    const tailHtml = singleImage ? mediaTailHtml(media[0]) : '';
+    const rowHtml = media.map(a => mediaItemHtml(a, { tail: singleImage })).join('');
 
     // If there's a caption on a single attachment and it's wider than the attachment's
     // own square, split it into its own gapped bubble instead of stretching the combo.
     const captionOverflows = media.length === 1 && m.content &&
       (measureTextWidth(m.content, CAPTION_FONT) + 24) > squareWidth;
+    const hasCaptionInsideCombo = !!(m.content && !captionOverflows);
+
+    const comboClasses = ['attach-combo'];
+    if(singleImage) comboClasses.push('tail-image');
+    if(!hasCaptionInsideCombo) comboClasses.push('no-caption');
+    const comboClass = comboClasses.join(' ');
 
     if(captionOverflows){
-      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${tailHtml}</div>`;
+      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div></div>`;
       html += `<div class="bubble no-tail" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>`;
     } else {
       const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '';
-      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${tailHtml}${caption}</div>`;
+      html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${caption}</div>`;
     }
   }
   if(files.length){

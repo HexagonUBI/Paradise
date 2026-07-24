@@ -11,6 +11,11 @@
   },
   "devDependencies": {
     "electron": "^31.7.7"
+  },
+  "overrides": {
+    "yauzl": "^3.3.1"
+  },
+  "allowScripts": {
+    "electron@31.7.7": true
   }
 }
-

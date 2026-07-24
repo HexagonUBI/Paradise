@@ -194,32 +194,36 @@
   .bubble.no-tail::before,
   .bubble.no-tail::after{content:none;}
 
-  /* ---------- image-masked tail (single image attachment): the tail is a sliver of the
-     actual photo instead of a flat color, so it reads as part of the picture rather than
-     a floating triangle. See reference_messagebubbles_rules.png "Attachment Bubble". ---------- */
-  .attach-combo.tail-image{overflow:visible;}
-  .media-tail{
-    position:absolute;top:14px;width:9px;height:22px;
-    background-repeat:no-repeat;background-size:cover;
-    pointer-events:none;
+  /* ---------- image-masked tail (single image attachment) ----------
+     Rather than sampling a small separate sliver of the photo (which never lines up with
+     how the main image itself got cropped), the actual <img> is rendered 10px wider than
+     its visible square and shifted so the extra strip sits on the tail side. A clip-path
+     then carves the visible shape (rounded square + pointed nub) out of that single,
+     continuous image element -- the nub is genuinely made of the same pixels, not a copy.
+     See reference_messagebubbles_rules.png "Attachment Bubble". */
+  .attach-combo.tail-image .media-row{overflow:visible;}
+  .attach-combo.tail-image .media-row.grid-1 .tail-host{position:relative;width:230px;height:220px;}
+  .attach-combo.tail-image .tail-host img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;}
+  .msg-row.theirs .attach-combo.tail-image .tail-host{
+    margin-left:-10px;
+    clip-path:path("M15,0 L225,0 A5,5 0 0 1 230,5 L230,215 A5,5 0 0 1 225,220 L15,220 A5,5 0 0 1 10,215 L10,28 L0,21 L10,14 L10,5 A5,5 0 0 1 15,0 Z");
   }
-  .msg-row.theirs .attach-combo.tail-image .media-tail{
-    left:-8px;background-position:left center;
-    clip-path:polygon(100% 6%, 100% 94%, 0% 50%);
+  .msg-row.mine .attach-combo.tail-image .tail-host{
+    clip-path:path("M5,0 L215,0 A5,5 0 0 1 220,5 L220,14 L230,21 L220,28 L220,215 A5,5 0 0 1 215,220 L5,220 A5,5 0 0 1 0,215 L0,5 A5,5 0 0 1 5,0 Z");
   }
-  .msg-row.mine .attach-combo.tail-image .media-tail{
-    right:-8px;background-position:right center;
-    clip-path:polygon(0% 6%, 0% 94%, 100% 50%);
-  }
+
   .theirs-wrap{display:flex;gap:8px;align-items:flex-start;}
   .theirs-wrap .avatar{width:38px;height:38px;font-size:14px;border-radius:50%;flex-shrink:0;overflow:hidden;}
   .msg-bubble-stack{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:340px;}
 
   /* ---------- attachments: images / video, grouped, with optional caption ---------- */
-  .attach-combo{position:relative;border-radius:5px;background:var(--bubble-them);display:flex;flex-direction:column;align-items:flex-start;}
+  .attach-combo{position:relative;border-radius:5px;background:var(--bubble-them);display:flex;flex-direction:column;align-items:flex-start;width:fit-content;max-width:100%;}
   .msg-row.mine .attach-combo{background:var(--bubble-me);}
   .attach-combo .media-row{display:grid;gap:2px;border-radius:5px 5px 0 0;overflow:hidden;}
-  .attach-combo .media-row:only-child{border-radius:5px;}
+  /* Full rounding only when this combo has no caption riding underneath it. Using an
+     explicit class here (rather than :only-child) keeps this correct now that a tailed
+     image's .tail-host can add a sibling wrapper next to .media-row. */
+  .attach-combo.no-caption .media-row{border-radius:5px;}
   .attach-combo .media-row.grid-1{grid-template-columns:220px;}
   .attach-combo .media-row.grid-1 .media-item{width:220px;height:220px;}
   .attach-combo .media-row.grid-2{grid-template-columns:repeat(2,140px);}
@@ -396,6 +400,17 @@
   .back-link{font-size:12.5px;color:var(--text-dim);cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:5px;}
 
   /* ---------- settings modal ---------- */
+  /* ---------- image lightbox: fullscreen viewer with zoom/pan, opened by clicking an attachment ---------- */
+  .lightbox-overlay{position:fixed;inset:0;background:rgba(8,18,26,.9);z-index:999;display:none;align-items:center;justify-content:center;}
+  .lightbox-overlay.show{display:flex;}
+  .lightbox-stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .lightbox-img{max-width:88vw;max-height:82vh;object-fit:contain;user-select:none;-webkit-user-drag:none;border-radius:4px;transform-origin:center center;}
+  .lightbox-btn{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;}
+  .lightbox-btn:hover{background:rgba(255,255,255,.24);}
+  .lightbox-close{position:absolute;top:22px;right:24px;}
+  .lightbox-controls{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);padding:7px 14px;border-radius:24px;backdrop-filter:blur(8px);}
+  .lightbox-zoom-level{font-size:12.5px;color:#fff;min-width:40px;text-align:center;font-weight:600;user-select:none;}
+
   .modal-backdrop{position:absolute;inset:0;background:rgba(20,40,60,.35);display:none;align-items:center;justify-content:center;z-index:80;}
   .modal-backdrop.show{display:flex;}
   .modal-card{background:#fff;border-radius:5px;width:380px;max-width:90%;padding:24px;}
