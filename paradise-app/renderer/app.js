@@ -298,6 +298,7 @@ function showFatalAuthError(err){
 }
 
 /* ---------------- gateway events ---------------- */
+let _checkedUpdateRelaunch = false;
 client.addEventListener('ready', (e) => {
   const d = e.detail;
   if(Array.isArray(d.presences)){
@@ -310,6 +311,17 @@ client.addEventListener('ready', (e) => {
   if(Array.isArray(d.guilds) && d.guilds.length){
     state.guilds = d.guilds.map(g => g.properties || g);
     renderGuildRail();
+  }
+  if(!_checkedUpdateRelaunch){
+    _checkedUpdateRelaunch = true;
+    if(window.paradiseNative && window.paradiseNative.getUpdatedFrom){
+      window.paradiseNative.getUpdatedFrom().then(updatedFrom => {
+        if(updatedFrom){
+          patchNotesModal.classList.add('show');
+          loadPatchNotes();
+        }
+      }).catch(() => {});
+    }
   }
 });
 
@@ -738,6 +750,110 @@ function measureTextWidth(text, font){
   return ctx.measureText(text).width;
 }
 
+// Matches (in priority order): bare URLs, custom emoji <a?:name:id>, role mentions <@&id>,
+// user mentions <@id>/<@!id>, and @everyone/@here -- everything else is left as plain text.
+const CONTENT_TOKEN_RE = /(?<url>https?:\/\/[^\s<]+)|<(?<emojiAnimated>a?):(?<emojiName>[a-zA-Z0-9_]+):(?<emojiId>\d+)>|<@&(?<roleId>\d+)>|<@!?(?<userId>\d+)>|@(?<everyoneWho>everyone|here)\b/g;
+
+// Matches a full emoji grapheme cluster: flags (regional indicator pairs), or a pictographic
+// character with an optional skin-tone modifier / variation selector, chained with ZWJ for
+// combined emoji (families, professions, etc).
+const EMOJI_RE = /\p{Regional_Indicator}{2}|\p{Extended_Pictographic}[\u{1F3FB}-\u{1F3FF}]?\uFE0F?(?:\u200D\p{Extended_Pictographic}[\u{1F3FB}-\u{1F3FF}]?\uFE0F?)*/gu;
+const TWEMOJI_BASE = 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/';
+
+function twemojiCodepoints(glyph){
+  // Twemoji's own convention: keep FE0F variation selectors only when the glyph is a joined
+  // (ZWJ) sequence; a lone FE0F on a simple emoji is dropped since the asset is filed without it.
+  const hasZWJ = glyph.indexOf('\u200D') !== -1;
+  const clean = hasZWJ ? glyph : glyph.replace(/\uFE0F/g, '');
+  const points = [];
+  let i = 0;
+  while(i < clean.length){
+    const cp = clean.codePointAt(i);
+    points.push(cp.toString(16));
+    i += cp > 0xFFFF ? 2 : 1;
+  }
+  return points.join('-');
+}
+
+function renderPlainSegment(segment){
+  let out = '';
+  let lastIndex = 0;
+  let match;
+  EMOJI_RE.lastIndex = 0;
+  while((match = EMOJI_RE.exec(segment))){
+    out += escapeHtml(segment.slice(lastIndex, match.index));
+    const glyph = match[0];
+    const url = TWEMOJI_BASE + twemojiCodepoints(glyph) + '.svg';
+    out += `<img class="content-emoji twemoji" src="${url}" alt="${escapeHtml(glyph)}" draggable="false">`;
+    lastIndex = match.index + glyph.length;
+  }
+  out += escapeHtml(segment.slice(lastIndex));
+  return out;
+}
+
+function renderMessageContent(text, m){
+  if(!text) return '';
+  const mentionMap = {};
+  (m.mentions || []).forEach(u => { mentionMap[u.id] = u.global_name || u.username || 'user'; });
+
+  let out = '';
+  let lastIndex = 0;
+  let match;
+  CONTENT_TOKEN_RE.lastIndex = 0;
+  while((match = CONTENT_TOKEN_RE.exec(text))){
+    out += renderPlainSegment(text.slice(lastIndex, match.index));
+    const g = match.groups;
+    if(g.url){
+      // Trailing punctuation right after a URL (end of sentence, closing paren, etc.) is
+      // usually not part of the link -- keep it outside the <a> tag.
+      let url = g.url;
+      let trail = '';
+      const trailMatch = url.match(/[.,!?:;)\]]+$/);
+      if(trailMatch){ trail = trailMatch[0]; url = url.slice(0, url.length - trail.length); }
+      const safeUrl = escapeHtml(url);
+      out += `<a href="${safeUrl}" class="msg-link" target="_blank" rel="noopener">${safeUrl}</a>${escapeHtml(trail)}`;
+    } else if(g.emojiId){
+      const url = client.cdnEmojiUrl(g.emojiId, g.emojiAnimated === 'a');
+      out += url
+        ? `<img class="content-emoji" src="${escapeHtml(url)}" alt=":${escapeHtml(g.emojiName)}:" title=":${escapeHtml(g.emojiName)}:">`
+        : escapeHtml(match[0]);
+    } else if(g.roleId){
+      out += `<span class="msg-mention">@role</span>`;
+    } else if(g.userId){
+      out += `<span class="msg-mention">@${escapeHtml(mentionMap[g.userId] || 'user')}</span>`;
+    } else if(g.everyoneWho){
+      out += `<span class="msg-mention">@${escapeHtml(g.everyoneWho)}</span>`;
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  out += renderPlainSegment(text.slice(lastIndex));
+  return out;
+}
+
+function estimateContentWidth(text, font){
+  // For caption-overflow sizing we want the *rendered* width, not the raw source width --
+  // a custom-emoji shortcode or a mention token is much longer as text (e.g. a full numeric
+  // snowflake ID) than what it actually renders as, which was throwing off the split-caption
+  // decision. Swap tokens for a short stand-in before measuring.
+  if(!text) return 0;
+  let plain = '';
+  let lastIndex = 0;
+  let match;
+  CONTENT_TOKEN_RE.lastIndex = 0;
+  while((match = CONTENT_TOKEN_RE.exec(text))){
+    plain += text.slice(lastIndex, match.index);
+    const g = match.groups;
+    if(g.url) plain += g.url;
+    else if(g.emojiId) plain += '\u00A0\u00A0';
+    else if(g.roleId) plain += '@role';
+    else if(g.userId) plain += '@user';
+    else if(g.everyoneWho) plain += '@' + g.everyoneWho;
+    lastIndex = match.index + match[0].length;
+  }
+  plain += text.slice(lastIndex);
+  return measureTextWidth(plain, font);
+}
+
 async function selectChannel(channelId, info, pushHistory){
   hideHomePanel();
   state.activeChannelId = channelId;
@@ -955,7 +1071,7 @@ function updateMessageEl(m){
   const row = findMessageRow(m.id);
   if(!row) return;
   const bubble = row.querySelector('[data-role="bubble-text"]');
-  if(bubble) bubble.innerHTML = `${escapeHtml(m.content || '')}${editedTag(m)}`;
+  if(bubble) bubble.innerHTML = `${renderMessageContent(m.content || '', m)}${editedTag(m)}`;
 }
 
 function removeMessageEl(messageId){
@@ -1236,7 +1352,7 @@ function renderMessageBody(m){
     // If there's a caption on a single attachment and it's wider than the attachment's
     // own square, split it into its own gapped bubble instead of stretching the combo.
     const captionOverflows = media.length === 1 && m.content &&
-      (measureTextWidth(m.content, CAPTION_FONT) + 24) > squareWidth;
+      (estimateContentWidth(m.content, CAPTION_FONT) + 24) > squareWidth;
     const hasCaptionInsideCombo = !!(m.content && !captionOverflows);
 
     const comboClasses = ['attach-combo'];
@@ -1246,18 +1362,18 @@ function renderMessageBody(m){
 
     if(captionOverflows){
       html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div></div>`;
-      html += `<div class="bubble no-tail" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>`;
+      html += `<div class="bubble no-tail" data-role="bubble-text">${renderMessageContent(m.content, m)}${editedTag(m)}</div>`;
     } else {
-      const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>` : '';
+      const caption = m.content ? `<div class="media-caption" data-role="bubble-text">${renderMessageContent(m.content, m)}${editedTag(m)}</div>` : '';
       html += `<div class="${comboClass}"><div class="media-row ${gridClass}">${rowHtml}</div>${caption}</div>`;
     }
   }
   if(files.length){
     html += files.map(a => attachmentHtml(a)).join('');
-    if(!media.length && m.content) html += `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content)}${editedTag(m)}</div>`;
+    if(!media.length && m.content) html += `<div class="bubble" data-role="bubble-text">${renderMessageContent(m.content, m)}${editedTag(m)}</div>`;
   }
   if(!media.length && !files.length){
-    html += `<div class="bubble" data-role="bubble-text">${escapeHtml(m.content || '')}${editedTag(m)}</div>`;
+    html += `<div class="bubble" data-role="bubble-text">${renderMessageContent(m.content || '', m)}${editedTag(m)}</div>`;
   }
   return html;
 }
@@ -1278,8 +1394,13 @@ document.getElementById('fwd-btn').addEventListener('click', () => {
 const input = document.getElementById('composer-input');
 const sendBtn = document.getElementById('send-btn');
 function updateSendState(){ sendBtn.disabled = input.value.trim().length === 0 || !state.activeChannelId; }
+function autoGrowComposer(){
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
 input.addEventListener('input', () => {
   updateSendState();
+  autoGrowComposer();
   maybeSendTyping();
   tapTypingIcon();
 });
@@ -1304,6 +1425,7 @@ async function sendMessage(){
   if(!text || !state.activeChannelId) return;
   const channelId = state.activeChannelId;
   input.value = '';
+  autoGrowComposer();
   updateSendState();
   sendBtn.disabled = true;
   try {
@@ -1321,7 +1443,7 @@ async function sendMessage(){
   }
 }
 sendBtn.addEventListener('click', sendMessage);
-input.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); } });
+input.addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
 
 /* ---------------- typing indicator display ---------------- */
 const typingUsersByChannel = {};
@@ -1375,7 +1497,7 @@ const picker = document.getElementById('emoji-picker');
 EMOJI.forEach(e => {
   const b = document.createElement('button');
   b.textContent = e;
-  b.addEventListener('click', () => { input.value += e; updateSendState(); picker.classList.remove('show'); input.focus(); });
+  b.addEventListener('click', () => { input.value += e; updateSendState(); autoGrowComposer(); picker.classList.remove('show'); input.focus(); });
   picker.appendChild(b);
 });
 document.getElementById('emoji-btn').addEventListener('click', function(e){ e.stopPropagation(); picker.classList.toggle('show'); });

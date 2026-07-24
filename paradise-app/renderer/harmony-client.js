@@ -226,6 +226,13 @@ class HarmonyClient extends EventTarget {
     return `${base}/stickers/${stickerId}.${ext}`;
   }
 
+  cdnEmojiUrl(emojiId, animated){
+    if(!emojiId) return null;
+    const base = this._resolveCdnBase();
+    if(!base) return null;
+    return `${base}/emojis/${emojiId}.${animated ? 'gif' : 'png'}`;
+  }
+
   /* ---------------- Gateway ---------------- */
   connectGateway(){
     if(!this.gatewayUrl) throw new HarmonyError('No gateway URL known for this instance.');

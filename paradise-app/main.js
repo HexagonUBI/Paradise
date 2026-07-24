@@ -152,6 +152,7 @@ ipcMain.on('tray-status', (_event, status) => setTrayStatus(status));
    installer window ever appears again, and there's no bundled updater library to go missing. */
 const UPDATE_REPO = 'HexagonUBI/Paradise';
 let pendingUpdate = null; // { version, asset } once a newer release is found
+let lastUpdatedFromVersion = null; // set when launched via the update script's --paradise-updated-from= marker
 const updateLogPath = () => path.join(app.getPath('temp'), 'paradise-update-log.txt');
 // console.log/error go nowhere for a normally-launched packaged app (no
 // attached console), so every diagnostic that matters gets written here too -
@@ -462,6 +463,7 @@ ipcMain.on('update-start-download', async () => {
 });
 
 ipcMain.handle('app-get-version', () => app.getVersion());
+ipcMain.handle('app-get-updated-from', () => lastUpdatedFromVersion);
 
 // Custom titlebar window controls (the renderer has no access to real window
 // chrome, since frame:false removes it — these IPC handlers are what actually
@@ -528,7 +530,10 @@ ipcMain.handle('auth-clear', () => {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null); // Discord-style: no native menu bar, the app draws its own chrome
   const updatedFromArg = process.argv.find(a => a.startsWith('--paradise-updated-from='));
-  if(updatedFromArg) logUpdate(`app started WITH update-relaunch marker (${updatedFromArg}) - confirms the update script's Start-Process launched this instance`);
+  if(updatedFromArg){
+    logUpdate(`app started WITH update-relaunch marker (${updatedFromArg}) - confirms the update script's Start-Process launched this instance`);
+    lastUpdatedFromVersion = updatedFromArg.slice('--paradise-updated-from='.length);
+  }
   createWindow();
   createTray();
   runUpdateCheck();

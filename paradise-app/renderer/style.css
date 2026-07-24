@@ -158,6 +158,10 @@
   .msg-author{font-size:11.5px;color:var(--text-dim);font-weight:700;margin-bottom:2px;}
   .bubble{position:relative;padding:10px 14px;border-radius:5px;font-size:14px;line-height:1.4;word-break:break-word;width:fit-content;max-width:100%;}
   .edited-tag{font-size:10.5px;color:var(--text-dim);margin-left:6px;font-weight:500;}
+  .msg-link{color:var(--sky);text-decoration:underline;word-break:break-all;}
+  .msg-link:hover{text-decoration:none;}
+  .msg-mention{color:var(--sky);background:rgba(30,167,225,.14);border-radius:3px;padding:0 3px;font-weight:600;cursor:default;}
+  .content-emoji{width:20px;height:20px;vertical-align:-5px;object-fit:contain;}
   .msg-row.mine{position:relative;}
   .msg-actions{position:absolute;top:-14px;right:0;display:none;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px;box-shadow:0 2px 8px rgba(15,50,75,0);}
   .msg-row.mine:hover .msg-actions{display:flex;}
@@ -173,20 +177,23 @@
 
   /* ---------- speech-bubble tail (see reference_messagebubbles_rules.png) ---------- */
   /* Flat-color tail: used for plain text bubbles, file attachments, and any attachment
-     bubble that doesn't have its own image to pull the tail from (multi-image grids, video). */
+     bubble that doesn't have its own image to pull the tail from (multi-image grids, video).
+     Same 10x14 nub silhouette (straight base, gently rounded tip) as the image-masked tail
+     below, just filled with the bubble's solid color via clip-path instead of a border-triangle
+     hack -- that's what let the two tail styles drift out of shape from each other. */
   .msg-row.theirs .bubble::before,
   .msg-row.theirs .attach-combo:not(.tail-image)::before,
   .msg-row.theirs .attach-bubble::before{
-    content:"";position:absolute;left:-4px;top:14px;width:0;height:0;
-    border-top:7px solid transparent;border-bottom:7px solid transparent;
-    border-right:7px solid var(--bubble-them);
+    content:"";position:absolute;left:-8px;top:14px;width:10px;height:14px;
+    background:var(--bubble-them);
+    clip-path:path("M10,0 L10,14 Q2,11.5 0,7 Q2,2.5 10,0 Z");
   }
   .msg-row.mine .bubble::after,
   .msg-row.mine .attach-combo:not(.tail-image)::after,
   .msg-row.mine .attach-bubble::after{
-    content:"";position:absolute;right:-6px;top:14px;width:0;height:0;
-    border-top:7px solid transparent;border-bottom:7px solid transparent;
-    border-left:7px solid var(--bubble-me);
+    content:"";position:absolute;right:-8px;top:14px;width:10px;height:14px;
+    background:var(--bubble-me);
+    clip-path:path("M0,0 L0,14 Q8,11.5 10,7 Q8,2.5 0,0 Z");
   }
 
   /* A bubble that trails an attachment above it (split caption, see media-caption-split
@@ -202,19 +209,21 @@
      continuous image element -- the nub is genuinely made of the same pixels, not a copy.
      See reference_messagebubbles_rules.png "Attachment Bubble". */
   .attach-combo.tail-image .media-row{overflow:visible;}
-  .attach-combo.tail-image .media-row.grid-1 .tail-host{position:relative;width:230px;height:220px;}
+  .attach-combo.tail-image .media-row.grid-1 .tail-host{position:relative;width:230px;height:220px;flex:none;}
   .attach-combo.tail-image .tail-host img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;}
   .msg-row.theirs .attach-combo.tail-image .tail-host{
     margin-left:-10px;
-    clip-path:path("M15,0 L225,0 A5,5 0 0 1 230,5 L230,215 A5,5 0 0 1 225,220 L15,220 A5,5 0 0 1 10,215 L10,28 L0,21 L10,14 L10,5 A5,5 0 0 1 15,0 Z");
+    clip-path:path("M15,0 L225,0 A5,5 0 0 1 230,5 L230,215 A5,5 0 0 1 225,220 L15,220 A5,5 0 0 1 10,215 L10,28 Q2,25.5 0,21 Q2,16.5 10,14 L10,5 A5,5 0 0 1 15,0 Z");
   }
   .msg-row.mine .attach-combo.tail-image .tail-host{
-    clip-path:path("M5,0 L215,0 A5,5 0 0 1 220,5 L220,14 L230,21 L220,28 L220,215 A5,5 0 0 1 215,220 L5,220 A5,5 0 0 1 0,215 L0,5 A5,5 0 0 1 5,0 Z");
+    clip-path:path("M5,0 L215,0 A5,5 0 0 1 220,5 L220,14 Q228,16.5 230,21 Q228,25.5 220,28 L220,215 A5,5 0 0 1 215,220 L5,220 A5,5 0 0 1 0,215 L0,5 A5,5 0 0 1 5,0 Z");
   }
 
   .theirs-wrap{display:flex;gap:8px;align-items:flex-start;}
   .theirs-wrap .avatar{width:38px;height:38px;font-size:14px;border-radius:50%;flex-shrink:0;overflow:hidden;}
   .msg-bubble-stack{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:340px;}
+  .msg-row.mine .msg-bubble-stack{align-items:flex-end;}
+  .msg-row.theirs .msg-bubble-stack{align-items:flex-start;}
 
   /* ---------- attachments: images / video, grouped, with optional caption ---------- */
   .attach-combo{position:relative;border-radius:5px;background:var(--bubble-them);display:flex;flex-direction:column;align-items:flex-start;width:fit-content;max-width:100%;}
@@ -259,12 +268,12 @@
   .typing-indicator .icn{width:15px;height:15px;background:var(--sky);border-radius:4px;padding:3px;transition:transform .12s;}
   .typing-indicator .icn.tap{transform:scale(.8);}
 
-  .composer{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--border);position:relative;}
+  .composer{display:flex;align-items:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--border);position:relative;}
   .square-btn{width:34px;height:34px;border-radius:50%;background:var(--sky);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .square-btn:hover{background:#0E9BD6;}
-  .composer input[type=text]{flex:1;border:1px solid var(--border);border-radius:5px;padding:11px 16px;font-size:14px;outline:none;background:none;color:var(--text);}
-  .composer input[type=text]:focus{border-color:var(--sky);background:#fff;}
-  .composer input[type=text]:disabled{opacity:.6;}
+  #composer-input{flex:1;border:1px solid var(--border);border-radius:5px;padding:11px 16px;font-size:14px;line-height:1.4;outline:none;background:none;color:var(--text);font-family:inherit;resize:none;overflow-y:auto;max-height:140px;}
+  #composer-input:focus{border-color:var(--sky);background:#fff;}
+  #composer-input:disabled{opacity:.6;}
   .send-btn{width:32px;height:32px;border-radius:50%;background:none;;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .send-btn:disabled{opacity:.4;cursor:default;}
   .send-btn svg path{fill:var(--sky);}
